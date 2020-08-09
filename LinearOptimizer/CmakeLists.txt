@@ -1,0 +1,8 @@
+set(target LinearOptimizer)
+
+set(files main.cpp)
+
+add_executable(${target} WIN32 ${files})
+set_target_properties(${target} PROPERTIES FOLDER "Any")
+target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
+
