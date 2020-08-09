@@ -4,6 +4,7 @@
 
 Chrono::Chrono() {
   QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+  this->Start();
 }
 
 void Chrono::Start() {
