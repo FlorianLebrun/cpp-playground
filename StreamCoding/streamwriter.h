@@ -17,6 +17,8 @@ namespace streamwriter {
 
    class IEncoding {
    public:
+      virtual uint32_t readCode(reader& stream) = 0;
+      virtual void writeCode(writer& stream, uint32_t code) = 0;
       virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) = 0; // Return fragment end
       virtual void encodeFragment(writer& output, const uint32_t* codes_ptr, const uint32_t* codes_end) = 0; // Return output end
    };
@@ -32,6 +34,9 @@ namespace streamwriter {
       reader(const void* begin, const void* end)
          :ptr((const uint8_t*)begin), end((const uint8_t*)end)
       {
+      }
+      bool empty() {
+         return this->ptr >= this->end;
       }
       uint8_t pop() {
          if (this->ptr >= this->end) return 0;
@@ -207,6 +212,12 @@ namespace streamwriter {
          static __forceinline void write_code(uint8_t*& ptr, uint32_t code) {
             (ptr++)[0] = code;
          }
+         virtual uint32_t readCode(reader& stream) override {
+            return this->read_code(stream);
+         }
+         virtual void writeCode(writer& stream, uint32_t code) override {
+            this->write_code(stream, code);
+         }
          virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) override {
             return input.read_codepoints<ascii, uint32_t>(codes_ptr, codes_end);
          }
@@ -221,12 +232,6 @@ namespace streamwriter {
          static const bool use_integral_coding = false;
          static const int code_size_max = 4;
 
-         virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) override {
-            return input.read_codepoints<utf8, uint32_t>(codes_ptr, codes_end);
-         }
-         virtual void encodeFragment(writer& output, const uint32_t* codes_ptr, const uint32_t* codes_end) override {
-            output.write_codepoints<utf8, uint32_t>(codes_ptr, codes_end);
-         }
          static __forceinline uint32_t read_code(reader& stream) {
             return stream.pop();
          }
@@ -251,6 +256,18 @@ namespace streamwriter {
                (ptr++)[0] = (code & 0x3f) | 0x80;
             }
          }
+         virtual uint32_t readCode(reader& stream) override {
+            return this->read_code(stream);
+         }
+         virtual void writeCode(writer& stream, uint32_t code) override {
+            this->write_code(stream, code);
+         }
+         virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) override {
+            return input.read_codepoints<utf8, uint32_t>(codes_ptr, codes_end);
+         }
+         virtual void encodeFragment(writer& output, const uint32_t* codes_ptr, const uint32_t* codes_end) override {
+            output.write_codepoints<utf8, uint32_t>(codes_ptr, codes_end);
+         }
       };
 
       class utf8_escaped : public IEncoding {
@@ -259,12 +276,6 @@ namespace streamwriter {
          static const bool use_integral_coding = false;
          static const int code_size_max = 6;
 
-         virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) override {
-            return input.read_codepoints<utf8_escaped, uint32_t>(codes_ptr, codes_end);
-         }
-         virtual void encodeFragment(writer& output, const uint32_t* codes_ptr, const uint32_t* codes_end) override {
-            output.write_codepoints<utf8_escaped, uint32_t>(codes_ptr, codes_end);
-         }
          static __forceinline uint32_t read_code(reader& stream) {
             return stream.pop();
          }
@@ -341,6 +352,18 @@ namespace streamwriter {
                (ptr++)[0] = (code & 0x40) ? 0xC3 : 0xC2;
                (ptr++)[0] = (code & 0x3f) | 0x80;
             }
+         }
+         virtual uint32_t readCode(reader& stream) override {
+            return this->read_code(stream);
+         }
+         virtual void writeCode(writer& stream, uint32_t code) override {
+            this->write_code(stream, code);
+         }
+         virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) override {
+            return input.read_codepoints<utf8_escaped, uint32_t>(codes_ptr, codes_end);
+         }
+         virtual void encodeFragment(writer& output, const uint32_t* codes_ptr, const uint32_t* codes_end) override {
+            output.write_codepoints<utf8_escaped, uint32_t>(codes_ptr, codes_end);
          }
       };
 

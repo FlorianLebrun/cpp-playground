@@ -1,6 +1,8 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <sstream>
+#include <codecvt>
 #include "./chrono.h"
 #include "./streamwriter.h"
 
@@ -59,7 +61,7 @@ void write_polymorph(writer& output, IEncoding* outputEncoding, reader input, IE
 }
 
 void test1(std::vector<char>& chars) {
-   streamwriter::stream_utf8 out(stream);
+   stream_utf8 out(stream);
    Chrono chrono;
    out.put<coding::ascii>(&chars[0], chars.size());
    printf("\n> test1: %lg ms\n", chrono.GetDiffDouble(Chrono::MS));
@@ -67,7 +69,7 @@ void test1(std::vector<char>& chars) {
 }
 
 void test2(std::vector<char>& chars) {
-   streamwriter::stream_utf8 out(stream);
+   stream_utf8 out(stream);
    Chrono chrono;
    out.put<coding::utf8>(&chars[0], chars.size());
    printf("\n> test2: %lg ms\n", chrono.GetDiffDouble(Chrono::MS));
@@ -75,18 +77,39 @@ void test2(std::vector<char>& chars) {
 }
 
 void test3(std::vector<char>& chars) {
-   streamwriter::writer out(stream);
+   writer out(stream);
    Chrono chrono;
    write_polymorph(out, outputEncoding, reader(&chars[0], chars.size()), inputEncoding);
    printf("\n> test3: %lg ms\n", chrono.GetDiffDouble(Chrono::MS));
    out.complete();
 }
 
+void test4(std::vector<char>& chars) {
+   writer out(stream);
+   reader in(&chars[0], chars.size());
+   Chrono chrono;
+   while (!in.empty()) {
+      outputEncoding->writeCode(out, inputEncoding->readCode(in));
+   }
+   printf("\n> test4: %lg ms\n", chrono.GetDiffDouble(Chrono::MS));
+   out.complete();
+}
+
+void test_std(std::vector<char>& chars) {
+   std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_conv;
+   std::wstring in((wchar_t*)&chars[0], chars.size()/2);
+   Chrono chrono;
+   std::string fullpath = utf8_conv.to_bytes(in);
+   printf("\n> test_std: %lg ms\n", chrono.GetDiffDouble(Chrono::MS));
+   printf("> total length = %d bytes\n", fullpath.size());
+}
+
 void test_fastest(std::vector<char>& chars) {
-   char* out = new char[chars.size()];
+   int length = chars.size();
+   char* out = new char[length];
    Chrono chrono;
    //memcpy(out, &chars[0], chars.size());
-   for (int i = 0; i < chars.size(); i++) out[i] = chars[i];
+   for (int i = 0; i < length; i++) out[i] = chars[i];
    printf("\n> test_fastest: %lg ms\n", chrono.GetDiffDouble(Chrono::MS));
 }
 
@@ -97,12 +120,16 @@ void main() {
    test1(chars);
    test2(chars);
    test3(chars);
+   test4(chars);
 
+   test_std(chars);
    test_fastest(chars);
 
    test1(chars);
    test2(chars);
    test3(chars);
+   test4(chars);
 
+   test_std(chars);
    test_fastest(chars);
 }
