@@ -132,4 +132,6 @@ void main() {
 
    test_std(chars);
    test_fastest(chars);
+
+   system("pause");
 }

@@ -1,6 +1,90 @@
+#include <sstream>
+#include <iostream>
 #include <string>
+#include <vector>
+#include <map>
 #include <windows.h>
 #include <wininet.h>
+
+/*
+
+*/
+struct tUri {
+   std::string scheme;
+   std::string authority;
+   std::string path;
+};
+struct Range {
+   const char* begin;
+   const char* end;
+   Range(const char* _begin, const char* _end)
+      :begin(_begin), end(_end)
+   {
+   }
+};
+struct tPatternStream {
+   std::ostringstream result;
+   std::map<std::string, std::string> parameters;
+   std::map<std::string, std::string> globals;
+
+   bool writeExpression(std::string value, std::string format) {
+      auto it = this->parameters.find(value);
+      if (it == this->parameters.end()) return false;
+      result << it->second;
+      return true;
+   }
+   tPatternStream& writePattern(const char* ptr, const char* end) {
+      while (ptr < end) {
+         char c = ptr[0];
+         if (c == '{' && ++ptr < end && ptr[0] != '{') {
+            const char* start = ptr;
+            while (ptr < end) {
+               if (ptr[0] == '}') {
+                  if (!this->writeExpression(std::string(start, ptr - start), "")) {
+                     ptr = start;
+                  }
+                  break;
+               }
+               ptr++;
+            }
+         }
+         else result << c;
+         ptr++;
+      }
+      return *this;
+   }
+   tPatternStream& writePattern(std::string& pattern) {
+      return this->writePattern(pattern.c_str(), pattern.c_str() + pattern.size());
+   }
+   std::string str() {
+      return result.str();
+   }
+};
+
+struct tParsedUri {
+   std::string parse(std::string pattern) {
+      std::ostringstream result;
+      int length = pattern.size();
+      const char* ptr = pattern.c_str();
+      for (int i = 0; i < length; i++) {
+         if (ptr[i] == '{') {
+            if (++i < length) {
+               if (ptr[i] != '{') {
+                  int startIndex = i;
+                  for (int j = i; j < length; j++) {
+                     if (ptr[i] == '}') {
+                     }
+                  }
+               }
+               else result << ptr[i];
+            }
+         }
+         else result << ptr[i];
+      }
+      return result.str();
+   }
+
+};
 
 struct tParsedAuthority {
    std::string domain;
@@ -115,7 +199,15 @@ struct InternetProvider {
 
 void main() {
    InternetProvider provider;
-   provider.sendRequest("https", "www.google.com", "GET", "/");
+   //provider.sendRequest("https", "www.google.com", "GET", "/");
 
+   tPatternStream pattern;
+   pattern.parameters["x"] = "hello";
+   pattern.parameters["y"] = "world";
+   pattern.parameters["ws-url"] = "https://www.website.com";
+   pattern.parameters["userID"] = "johnd";
+
+   // std::cout << "result: " << pattern.append(std::string("x={x} y={abc}\n")).str();
+   std::cout << "result: " << pattern.writePattern(std::string("{ws-url}/do/somthing/{userID}")).str();
 }
 
