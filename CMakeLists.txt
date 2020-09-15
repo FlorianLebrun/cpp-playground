@@ -5,7 +5,8 @@ project(Playground
   VERSION 1.0.0
 )
 
-add_subdirectory(./SourceRegistry)
+add_subdirectory(./CallStackAnalyzer)
+#add_subdirectory(./SourceRegistry)
 #add_subdirectory(./StreamCoding)
 #add_subdirectory(./HttpClient)
 #add_subdirectory(./LinearOptimizer)

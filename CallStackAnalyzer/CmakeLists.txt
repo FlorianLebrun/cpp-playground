@@ -1,0 +1,13 @@
+set(target CallStackAnalyzer)
+
+set(files
+  "main.cpp"
+  "chrono.h"
+  "chrono.cpp"
+  "get_context_x64.asm"
+)
+
+add_executable(${target} WIN32 ${files})
+set_target_properties(${target} PROPERTIES FOLDER "Any")
+target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
+
