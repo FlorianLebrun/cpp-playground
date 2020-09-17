@@ -291,7 +291,7 @@ __declspec(noinline) void stackcapture() {
 
   // Unwinds stackframes and stack beacons
   c.Start();
-  StackFrame* stack = captureCache.captureFrames(context);
+  StackFrame* stack = captureCache.updateFrames(context);
   //stack->print();
   capture_times.read_stack_time += c.GetDiffDouble(Chrono::US);
 

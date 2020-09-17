@@ -4,7 +4,9 @@
 #include <sstream>
 #include <codecvt>
 #include "./chrono.h"
+#include <Windows.h>
 #include "./streamwriter.h"
+
 
 using namespace streamwriter;
 
@@ -48,8 +50,10 @@ IStringOutStream* NewConsoleOutputStream() {
 }
 
 extern"C" IStringOutStream * stream = NewConsoleOutputStream();
-extern"C" IEncoding * inputEncoding = new coding::ascii();
+extern"C" IEncoding * inputEncoding = new coding::acp();
 extern"C" IEncoding * outputEncoding = new coding::utf8();
+
+coding::acp::converter_t* coding::acp::converter = new coding::acp::converter_t();
 
 void write_polymorph(writer& output, IEncoding* outputEncoding, reader input, IEncoding* inputEncoding) {
    uint32_t fragment[64];
@@ -132,6 +136,4 @@ void main() {
 
    test_std(chars);
    test_fastest(chars);
-
-   system("pause");
 }
