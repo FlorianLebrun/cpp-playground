@@ -13,7 +13,9 @@ namespace streamwriter {
       virtual void Resize(int size) = 0;
       virtual void Append(int expectedSize) = 0;
       virtual void Complete() = 0;
-};
+      virtual IStringOutStream* Reset() = 0;
+      virtual int TotalLength() = 0;
+   };
 #endif
 
    class reader;
@@ -21,6 +23,7 @@ namespace streamwriter {
 
    class IEncoding {
    public:
+      virtual const char* getName() = 0;
       virtual uint32_t readCode(reader& stream) = 0;
       virtual void writeCode(writer& stream, uint32_t code) = 0;
       virtual uint32_t* decodeFragment(uint32_t* codes_ptr, uint32_t* codes_end, reader& input) = 0; // Return fragment end
@@ -201,11 +204,15 @@ namespace streamwriter {
       template<class EncodingT>
       class GenericEncoding : public IEncoding {
          /* Require static inlinable functions:
+            static __forceinline const char* name();
             static __forceinline uint32_t read_code(reader& stream);
             static __forceinline uint32_t read_code(const uint8_t*& ptr);
             static __forceinline void write_code(writer& stream, uint32_t code);
             static __forceinline void write_code(uint8_t*& ptr, uint32_t code);
          */
+         virtual const char* getName() override {
+            return EncodingT::name();
+         }
          virtual uint32_t readCode(reader& stream) override final {
             return EncodingT::read_code(stream);
          }
@@ -226,6 +233,9 @@ namespace streamwriter {
          static const bool use_integral_coding = true;
          static const int code_size_max = sizeof(character_t);
 
+         static __forceinline const char* name() {
+            return "ascii";
+         }
          static __forceinline uint32_t read_code(reader& stream) {
             return stream.pop();
          }
@@ -255,11 +265,14 @@ namespace streamwriter {
                static int compareHashId(void const* x, void const* y) { return tpACPChar(x)->hashId - tpACPChar(y)->hashId; }
             } *tpACPChar;
 
+
             // For ACP -> unicode
             uint16_t ACP2unicode_table[256];
 
             // For unicode -> ACP
-            tACPChar unicode2ACP_table[257];
+            static const uint32_t unicode2ACP_table_size = 16000;
+            uint8_t unicode2ACP_table[unicode2ACP_table_size];
+            tACPChar unicode2ACP_chars[257];
             uint8_t unicode2ACP_hash2index[256];
 
             converter_t() {
@@ -269,27 +282,37 @@ namespace streamwriter {
                for (int i = 0; i < 256; i++)ACP_chars[i] = i;
                MultiByteToWideChar(CP_ACP, 0, LPCCH(ACP_chars), 256, LPWSTR(this->ACP2unicode_table), 256);
 
-               // For unicode -> ACP
+               // For unicode -> ACP table
+               int code_max = 0;
+               memset(this->unicode2ACP_table, '?', unicode2ACP_table_size);
+               for (int i = 0; i < 256; i++) {
+                  uint32_t code = this->ACP2unicode_table[i];
+                  if (code < unicode2ACP_table_size)this->unicode2ACP_table[code] = i;
+                  if (code > code_max)code_max = code;
+               }
+               printf("ACP code_max = %d\n", code_max);
+
+               // For unicode -> ACP hashmap
                for (int i = 0; i < 256; i++) {
                   uint16_t code = this->ACP2unicode_table[i];
-                  this->unicode2ACP_table[i].acp = i;
-                  this->unicode2ACP_table[i].code = code;
-                  this->unicode2ACP_table[i].hashId = ((uint8_t*)&code)[0] ^ ((uint8_t*)&code)[1];
+                  this->unicode2ACP_chars[i].acp = i;
+                  this->unicode2ACP_chars[i].code = code;
+                  this->unicode2ACP_chars[i].hashId = ((uint8_t*)&code)[0] ^ ((uint8_t*)&code)[1];
                }
-               this->unicode2ACP_table[256].hashId = 0;
-               this->unicode2ACP_table[256].acp = 0;
-               this->unicode2ACP_table[256].code = 0;
-               qsort(this->unicode2ACP_table, 256, sizeof(tACPChar), tACPChar::compareHashId);
+               this->unicode2ACP_chars[256].hashId = 0;
+               this->unicode2ACP_chars[256].acp = 0;
+               this->unicode2ACP_chars[256].code = 0;
+               qsort(this->unicode2ACP_chars, 256, sizeof(tACPChar), tACPChar::compareHashId);
                memset(unicode2ACP_hash2index, 0xff, 256);
-               for (int i = 255; i >= 0; i--) unicode2ACP_hash2index[unicode2ACP_table[i].hashId] = i;
+               for (int i = 255; i >= 0; i--) unicode2ACP_hash2index[unicode2ACP_chars[i].hashId] = i;
             }
-            uint8_t toAcp(uint16_t code) {
-               if (code < 128) {
-                  return code;
+            uint8_t toAcp(uint32_t code) {
+               if (code < unicode2ACP_table_size) {
+                  return unicode2ACP_table[code];
                }
                else {
                   uint8_t hashId = ((uint8_t*)&code)[0] ^ ((uint8_t*)&code)[1];
-                  tpACPChar chr = &this->unicode2ACP_table[unicode2ACP_hash2index[hashId]];
+                  tpACPChar chr = &this->unicode2ACP_chars[unicode2ACP_hash2index[hashId]];
                   do {
                      if (chr->code == code) return chr->acp;
                   } while ((++chr)->hashId == hashId);
@@ -299,6 +322,9 @@ namespace streamwriter {
          };
          static converter_t* converter;
 
+         static __forceinline const char* name() {
+            return "acp";
+         }
          static __forceinline uint32_t read_code(reader& stream) {
             return converter->ACP2unicode_table[stream.pop()];
          }
@@ -319,6 +345,9 @@ namespace streamwriter {
          static const bool use_integral_coding = false;
          static const int code_size_max = 4;
 
+         static __forceinline const char* name() {
+            return "utf8";
+         }
          static __forceinline uint32_t read_code(reader& stream) {
             return stream.pop();
          }
@@ -351,6 +380,9 @@ namespace streamwriter {
          static const bool use_integral_coding = false;
          static const int code_size_max = 6;
 
+         static __forceinline const char* name() {
+            return "utf8_escaped";
+         }
          static __forceinline uint32_t read_code(reader& stream) {
             return stream.pop();
          }
