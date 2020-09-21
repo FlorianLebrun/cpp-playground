@@ -1,6 +1,6 @@
 set(target StreamCoding)
 
-set(files streamwriter.h main.cpp chrono.h chrono.cpp)
+set(files stream-encoding.h stream-encoding.cpp main.cpp chrono.h chrono.cpp)
 
 source_group("" FILES ${files})
 add_executable(${target} WIN32 ${files})

@@ -1,11 +1,11 @@
+#include "./stream-encoding.h"
 #include <vector>
 #include <string>
 #include <iostream>
 #include <sstream>
 #include <codecvt>
-#include "./chrono.h"
 #include <Windows.h>
-#include "./streamwriter.h"
+#include "./chrono.h"
 
 
 using namespace streamwriter;
@@ -56,8 +56,6 @@ IStringOutStream* NewConsoleOutputStream() {
 }
 
 extern"C" IStringOutStream * stream = NewConsoleOutputStream();
-
-coding::acp::converter_t* coding::acp::converter = new coding::acp::converter_t();
 
 void reportTime(double time_ms, int size) {
    printf("  %d bytes - %lg ms\n", size, time_ms);
@@ -111,6 +109,7 @@ void test_std_codecvt_utf8(std::vector<char>& chars) {
    std::string fullpath = utf8_conv.to_bytes(in);
    reportTime(chrono.GetDiffDouble(Chrono::MS), fullpath.size());
 }
+
 
 void test_win32_MultiByteToWideChar(std::vector<char>& chars, int codepage, const char* codepage_name) {
    printf("\n> win32 MultiByte To WChar - %s\n", codepage_name);
