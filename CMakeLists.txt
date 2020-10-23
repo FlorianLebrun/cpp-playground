@@ -7,7 +7,8 @@ project(Playground
 
 #add_subdirectory(./SourceRegistry)
 #add_subdirectory(./CallStackAnalyzer)
-add_subdirectory(./StreamCoding)
+add_subdirectory(./MarkdownParser)
+add_subdirectory(./UrlParser)
 add_subdirectory(./SyncPattern)
 #add_subdirectory(./HttpClient)
 #add_subdirectory(./LinearOptimizer)

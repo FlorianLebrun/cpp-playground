@@ -1,6 +1,6 @@
-set(target SyncPattern)
+set(target MarkdownParser)
 
-set(files main.cpp chrono.h chrono.cpp spinlock.h spinlock.cpp)
+set(files main.cpp)
 
 source_group("" FILES ${files})
 add_executable(${target} WIN32 ${files})

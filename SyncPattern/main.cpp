@@ -1,5 +1,6 @@
 #include <mutex>
 #include <Windows.h>
+#include "spinlock.h"
 #include "chrono.h"
 
 struct critical_section {
