@@ -51,6 +51,4 @@ void main() {
    Uri uri;
    uri.parameters["config-dir"] = "/config";
    uri.parameters["param0"] = "user name";
-
-   
 }
