@@ -1,4 +1,6 @@
+
 #ifdef E_WAM
+#include "../Utils.h"
 #include "../../INCLUDES_BEGIN.h"
 #endif
 
@@ -7,13 +9,13 @@
 #include <iostream>
 #include <intrin.h>
 #include <windows.h>
-#include "./SourcePersistantState.h"
+#include "./PersistentState.h"
 
 #ifdef E_WAM
 #include "../../INCLUDES_END.h"
 #endif
 
-namespace SourceState {
+namespace wFS {
 
    struct PersistentHeap;
 
@@ -23,12 +25,12 @@ namespace SourceState {
       static ObjectPreambule* fromPtr(void* ptr) {
          return (ObjectPreambule*)(BytesPointer(ptr) - sizeof(ObjectPreambule));
       }
-      static Object* toPtr(ObjectPreambule* object) {
-         return (Object*)(BytesPointer(object) + sizeof(ObjectPreambule));
+      static Persistent* toPtr(ObjectPreambule* object) {
+         return (Persistent*)(BytesPointer(object) + sizeof(ObjectPreambule));
       }
    };
 
-   struct PoolDescriptor : public Object {
+   struct PoolDescriptor {
       static const uint32_t c_objectSizeMaxL2 = 23;
       static const uint32_t c_objectSizeMax = 1 << c_objectSizeMaxL2;
       static const uint32_t c_objectSizeMinL2 = 5;
@@ -38,7 +40,7 @@ namespace SourceState {
       ObjectPreambule* AllocObject(size_t size, PersistentHeap* heap);
       void FreeObject(ObjectPreambule* ptr, PersistentHeap* heap);
    private:
-      struct tFreeObject : public Object {
+      struct tFreeObject : public Persistent {
          Ref<tFreeObject> next;
       };
       Ref<tFreeObject> freeObjects[c_objectSizeClassCount];
@@ -48,7 +50,7 @@ namespace SourceState {
       void FreeInSegmentObject(ObjectPreambule* ptr, uint16_t sizeIndex, PersistentHeap* heap);
    };
 
-   struct SegmentDescriptor : public Object {
+   struct SegmentDescriptor {
       uint32_t size;
       SegmentDescriptor() {
          this->size = 0;
@@ -76,7 +78,7 @@ namespace SourceState {
    struct HeapDescriptor {
       HeapSignature signature;
       PoolDescriptor pool;
-      Ref<Object> root;
+      Ref<Persistent> root;
       uint32_t segmentsCount;
       SegmentDescriptor segmentsTable[2048];
       HeapDescriptor() {
@@ -94,13 +96,15 @@ namespace SourceState {
    public:
       std::string location;
       uint32_t segmentIndex;
-      SegmentMemory(std::string location, uint32_t segmentIndex) {
-         this->location = location;
+      SegmentMemory(uint32_t segmentIndex) {
          this->segmentIndex = segmentIndex;
          this->hFile = 0;
          this->hFileMap = 0;
          this->ViewPtr = 0;
          this->ViewSize = 0;
+      }
+      SegmentMemory(std::string location, uint32_t segmentIndex) : SegmentMemory(segmentIndex) {
+         this->location = location;
       }
       ~SegmentMemory() {
          this->Close();
@@ -175,6 +179,9 @@ namespace SourceState {
 
    class HeapMemory : public SegmentMemory {
    public:
+      HeapMemory() : SegmentMemory(0) {
+         // MUST add location manually
+      }
       HeapMemory(std::string filename)
          : SegmentMemory(filename, 0) {
       }
@@ -192,7 +199,7 @@ namespace SourceState {
       std::vector<SegmentMemory*> segmentMemories;
       std::string location;
 
-      PersistentHeap(std::string location);
+      PersistentHeap(const char* location);
       ~PersistentHeap();
       void Reset();
 
@@ -204,40 +211,38 @@ namespace SourceState {
       SegmentMemory* MapSegment(uint32_t segmentIndex);
    };
 
-   static PersistentHeap persistent_heap("d:/persistant_heap/test");
+   static PersistentHeap* persistent_heap = nullptr;
 
-   bool CreateRecursiveDirectoryA(LPCSTR path) {
-      DWORD dwAttrib = GetFileAttributesA(path);
-      if (!(dwAttrib & FILE_ATTRIBUTE_DIRECTORY)) {
-         int i;
-         for (i = 0; path[i]; i++) {
-            if (path[i] == '/' || path[i] == '\\') CreateDirectoryA(std::string(path, i).c_str(), 0);
-         }
-         return CreateDirectoryA(std::string(path, i).c_str(), 0);
+   Ref<Persistent> wFS::GetRootObject() {
+      return persistent_heap->heapMemory->root;
+   }
+
+   void wFS::SetRootObject(Ref<Persistent> root) {
+      persistent_heap->heapMemory->root = root;
+   }
+
+   void wFS::OpenHeap(const char* location) {
+      if (!persistent_heap) {
+         persistent_heap = new PersistentHeap(location);
       }
-      return true;
    }
 
-   Ref<Object> SourceState::GetRootObject() {
-      return persistent_heap.heapMemory->root;
-   }
-
-   void SourceState::SetRootObject(Ref<Object> root) {
-      persistent_heap.heapMemory->root = root;
-   }
-
-   void SourceState::ResetHeap() {
-      persistent_heap.Reset();
-   }
-
-   PersistentHeap::PersistentHeap(std::string location) : heapMemory(location) {
-
-      // Prepare working directory
-      this->location = location;
-      if (!CreateRecursiveDirectoryA(this->location.c_str())) {
-         std::cout << "Cannot create persistance directory at: " << this->location << std::endl;
-         exit(1);
+   void wFS::ResetHeap() {
+      if (persistent_heap) {
+         persistent_heap->Reset();
       }
+   }
+
+   void wFS::CloseHeap() {
+      if (persistent_heap) {
+         delete persistent_heap;
+         persistent_heap = nullptr;
+      }
+   }
+
+
+   PersistentHeap::PersistentHeap(const char* location) : location(location) {
+      this->heapMemory.location = this->location;
 
       // Open existing heap
       bool valid = false;
@@ -326,48 +331,62 @@ namespace SourceState {
       return segment;
    }
 
-   Object* BaseRef::get() const {
+   Persistent* BaseRef::get() const {
       if (this->_bits) {
-         return (Object*)(persistent_heap.MapSegment(this->segment)->GetBaseAddress() + offset);
+         return (Persistent*)(persistent_heap->MapSegment(this->segment)->GetBaseAddress() + offset);
       }
       else return 0;
    }
 
-   void BaseRef::set(Object* ptr) {
+   void BaseRef::set(Persistent* ptr) {
       if (ptr) {
          auto object = ObjectPreambule::fromPtr(ptr);
          this->segment = object->segmentIndex;
-         this->offset = uintptr_t(ptr) - persistent_heap.MapSegment(this->segment)->GetBaseAddress();
+         this->offset = uintptr_t(ptr) - persistent_heap->MapSegment(this->segment)->GetBaseAddress();
       }
       else this->_bits = 0;
    }
 
-   void* Object::operator new(size_t size) {
-      return persistent_heap.AllocMemory(size);
+   void BaseRef::replace(Persistent* ptr) {
+      Persistent* prevPtr = this->get();
+      if (ptr != prevPtr) {
+         if (ptr) {
+            auto object = ObjectPreambule::fromPtr(ptr);
+            this->segment = object->segmentIndex;
+            this->offset = uintptr_t(ptr) - persistent_heap->MapSegment(this->segment)->GetBaseAddress();
+         }
+         if (prevPtr) {
+            delete prevPtr;
+         }
+      }
    }
 
-   void Object::operator delete(void* ptr) {
-      persistent_heap.FreeMemory(ptr);
+   void* Persistent::operator new(size_t size) {
+      return persistent_heap->AllocMemory(size);
    }
-   void* Object::resize(Object* ptr, size_t newsize) {
+
+   void Persistent::operator delete(void* ptr) {
+      if (ptr) persistent_heap->FreeMemory(ptr);
+   }
+   void* Persistent::resize(Persistent* ptr, size_t newsize) {
       if (ptr) {
          auto object = ObjectPreambule::fromPtr(ptr);
          newsize += sizeof(ObjectPreambule);
          if (newsize > object->size) {
-            auto newPtr = persistent_heap.AllocMemory(newsize);
+            auto newPtr = persistent_heap->AllocMemory(newsize);
             memcpy(newPtr, ptr, object->size);
-            persistent_heap.FreeMemory(ptr);
+            persistent_heap->FreeMemory(ptr);
             return newPtr;
          }
          return ptr;
       }
       else {
-         return persistent_heap.AllocMemory(newsize);
+         return persistent_heap->AllocMemory(newsize);
       }
    }
 
    void* String::operator new(size_t size, size_t count) {
-      String* ptr = (String*)persistent_heap.AllocMemory(size + count);
+      String* ptr = (String*)persistent_heap->AllocMemory(size + count);
       ptr->length = count;
       return ptr;
    }
@@ -376,15 +395,21 @@ namespace SourceState {
       if (count < 0) count = strlen(chars);
       String* str = new (count + sizeof(String)) String();
       memcpy(str->chars, chars, count);
+      str->length = count;
       return str;
    }
 
    uint16_t PoolDescriptor::GetIndexFromSize(size_t size) {
       if (size >= c_objectSizeMin) {
+#ifdef __x86_64__
          unsigned long sizeL2;
-         _BitScanReverse64(&sizeL2, size);
-         if (size != (size_t(1) << sizeL2)) sizeL2++;
+         _BitScanReverse64(&sizeL2, (size << 1) - 1);
          return sizeL2 - c_objectSizeMinL2;
+#else
+         unsigned long sizeL2;
+         _BitScanReverse(&sizeL2, (size << 1) - 1);
+         return sizeL2 - c_objectSizeMinL2;
+#endif
       }
       return 0;
    }

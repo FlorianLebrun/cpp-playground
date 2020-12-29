@@ -5,7 +5,7 @@ project(Playground
   VERSION 1.0.0
 )
 
-#add_subdirectory(./SourceRegistry)
+add_subdirectory(./PersistentState)
 #add_subdirectory(./CallStackAnalyzer)
 #add_subdirectory(./MarkdownParser)
 #add_subdirectory(./UrlParser)
@@ -13,4 +13,5 @@ project(Playground
 #add_subdirectory(./HttpClient)
 #add_subdirectory(./LinearOptimizer)
 #add_subdirectory(./HttpServer_CS)
-add_subdirectory(./TypeinfoMapper)
+#add_subdirectory(./TypeinfoMapper)
+#add_subdirectory(./StringFormat)

@@ -1,0 +1,11 @@
+set(target PersistentState)
+
+set(files main.cpp chrono.h chrono.cpp PersistentState.h PersistentState.cpp AVLOperators.h)
+
+
+source_group("" FILES ${files})
+add_executable(${target} WIN32 ${files})
+set_target_properties(${target} PROPERTIES FOLDER "Any")
+target_compile_definitions(${target} PRIVATE TEST_STATE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/state")
+target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
+

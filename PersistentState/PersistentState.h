@@ -1,16 +1,15 @@
 #pragma once
-
 #include <stdint.h>
 #include "./AVLOperators.h"
 
-namespace SourceState {
+namespace wFS {
 
    typedef uint8_t* BytesPointer;
 
-   struct Object {
+   struct Persistent {
       static void* operator new(size_t size);
       static void operator delete(void* ptr);
-      static void* resize(Object* ptr, size_t newsize);
+      static void* resize(Persistent* ptr, size_t newsize);
    };
 
    struct BaseRef {
@@ -23,8 +22,9 @@ namespace SourceState {
       };
       BaseRef() { this->_bits = 0; }
       operator bool() const { return !!this->_bits; }
-      Object* get() const;
-      void set(Object* ptr);
+      Persistent* get() const;
+      void set(Persistent* ptr);
+      void replace(Persistent* ptr);
    };
 
    template <typename T>
@@ -41,40 +41,74 @@ namespace SourceState {
    template <typename T>
    struct UniqueRef : public Ref<T> {
       UniqueRef() {}
-      UniqueRef(T* ptr) { this->set(ptr); }
-      ~UniqueRef() { delete this->get(); }
+      UniqueRef(T* ptr) { this->replace(ptr); }
+      ~UniqueRef() { this->replace(0); }
       T* operator ->() const { return (T*)this->get(); }
       T& operator *() const { return *(T*)this->get(); }
-      T* operator = (T* ptr) { this->set(ptr); return ptr; }
+      T* operator = (T* ptr) { this->replace(ptr); return ptr; }
       operator T* () const { return (T*)this->get(); }
    };
 
    template <typename T>
    struct List {
-      //typedef Ref<Object> T;
-      struct t_buffer : Object {
+      //typedef Ref<Persistent> T;
+      struct t_buffer : Persistent {
          uint32_t count;
          T items[0];
          t_buffer() {
             this->count = 0;
          }
       };
-      UniqueRef<t_buffer> content;
+      Ref<t_buffer> content;
+      ~List() {
+         delete content;
+      }
       size_t size() {
-         return this->content.segment ? content->count : 0;
+         t_buffer* content = this->content;
+         return content ? content->count : 0;
       }
       T& operator [](size_t index) const {
          t_buffer* content = this->content;
          if (content && index < content->count) return content->items[index];
          else throw "overflow";
       }
-      void push_back(T& data) {
+      T* begin() {
+         t_buffer* content = this->content;
+         return content ? &content->items[0] : 0;
+      }
+      T* end() {
+         t_buffer* content = this->content;
+         return content ? &content->items[content->count] : 0;
+      }
+      void resize(size_t newsize) {
+         t_buffer* content = this->content;
+         content = (t_buffer*)Persistent::resize(content, sizeof(t_buffer) + sizeof(T) * newsize);
+         content->count = newsize;
+         this->content = content;
+      }
+      void erase(T* item, uint32_t count = 1) {
+         t_buffer* content = this->content;
+         if (content) {
+            intptr_t remainSize = intptr_t(&content->items[content->count]) - intptr_t(&item[count]);
+            if ((item >= &content->items[0]) && remainSize >= 0) {
+               memcpy(item, &item[count], remainSize);
+               content->count -= count;
+               return;
+            }
+         }
+         throw "out-of-range";
+      }
+      void push_back(const T& data) {
          size_t newIndex = this->size();
          t_buffer* content = this->content;
-         content = (t_buffer*)Object::resize(content, sizeof(t_buffer) + sizeof(T) * (newIndex + 1));
-         content->count++;
+         content = (t_buffer*)Persistent::resize(content, sizeof(t_buffer) + sizeof(T) * (newIndex + 1));
+         content->count = newIndex + 1;
          content->items[newIndex] = data;
          this->content = content;
+      }
+      void clear() {
+         delete content;
+         this->content = 0;
       }
    };
 
@@ -82,7 +116,7 @@ namespace SourceState {
    struct Map {
       //typedef int KeyT; typedef int ValueT;
 
-      struct t_node : Object {
+      struct t_node : Persistent {
          Ref<t_node> left;
          Ref<t_node> right;
          uint16_t height;
@@ -162,7 +196,7 @@ namespace SourceState {
       }
    };
 
-   struct String : Object {
+   struct String : Persistent {
       uint32_t length;
       char chars[1];
 
@@ -170,8 +204,14 @@ namespace SourceState {
       static String* New(const char* chars, int32_t count = -1);
    };
 
-   Ref<Object> GetRootObject();
-   void SetRootObject(Ref<Object>);
+   Ref<Persistent> GetRootObject();
+   void SetRootObject(Ref<Persistent>);
 
+   void OpenHeap(const char* location);
+   void CloseHeap();
    void ResetHeap();
+
+   bool CreateRecursiveDirectoryA(const char* path);
+
 }
+
