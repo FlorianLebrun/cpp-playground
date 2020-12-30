@@ -7,15 +7,35 @@ namespace wFS {
    typedef uint8_t* BytesPointer;
 
    struct Persistent {
+
+      struct Descriptor {
+         void* VMT;
+         int16_t typeID;
+         const char* name;
+         Descriptor();
+         void complete(Persistent* instance);
+      };
+
+      static const int16_t c_MaxTypeID = 40;
+
+      virtual int GetTypeID();
+
       static void* operator new(size_t size);
-      static void operator delete(void* ptr);
+      static void  operator delete(void* ptr);
       static void* resize(Persistent* ptr, size_t newsize);
+
+      template<class Object>
+      static inline void RegisterInfos() {
+         auto descriptor = new Descriptor();
+         descriptor->complete(&Object(*descriptor));
+      }
    };
 
    struct BaseRef {
       union {
          struct {
-            uint32_t segment;
+            int16_t typeID;
+            uint16_t segment;
             uint32_t offset;
          };
          uint64_t _bits;
@@ -210,8 +230,5 @@ namespace wFS {
    void OpenHeap(const char* location);
    void CloseHeap();
    void ResetHeap();
-
-   bool CreateRecursiveDirectoryA(const char* path);
-
 }
 

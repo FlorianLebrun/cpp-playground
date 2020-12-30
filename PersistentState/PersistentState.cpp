@@ -1,6 +1,5 @@
 
 #ifdef E_WAM
-#include "../Utils.h"
 #include "../../INCLUDES_BEGIN.h"
 #endif
 
@@ -16,16 +15,19 @@
 #endif
 
 namespace wFS {
-
    struct PersistentHeap;
+   void InitializationGuard();
+
+   static wFS::Persistent::Descriptor* ObjectInfos[Persistent::c_MaxTypeID] = { 0 };
+   static bool Initiate = false;
 
    struct ObjectPreambule {
       uint32_t segmentIndex;
       uint32_t size;
-      static ObjectPreambule* fromPtr(void* ptr) {
+      __forceinline static ObjectPreambule* fromPtr(void* ptr) {
          return (ObjectPreambule*)(BytesPointer(ptr) - sizeof(ObjectPreambule));
       }
-      static Persistent* toPtr(ObjectPreambule* object) {
+      __forceinline static Persistent* toPtr(ObjectPreambule* object) {
          return (Persistent*)(BytesPointer(object) + sizeof(ObjectPreambule));
       }
    };
@@ -242,6 +244,7 @@ namespace wFS {
 
 
    PersistentHeap::PersistentHeap(const char* location) : location(location) {
+      InitializationGuard();
       this->heapMemory.location = this->location;
 
       // Open existing heap
@@ -333,16 +336,25 @@ namespace wFS {
 
    Persistent* BaseRef::get() const {
       if (this->_bits) {
-         return (Persistent*)(persistent_heap->MapSegment(this->segment)->GetBaseAddress() + offset);
+         Persistent* ptr = (Persistent*)(persistent_heap->MapSegment(this->segment)->GetBaseAddress() + offset);
+         void* VMT = ObjectInfos[this->typeID]->VMT;
+         if ((*(void**)ptr) != VMT) {
+            (*(void**)ptr) = VMT;
+            printf("get update VMT %d\n", this->typeID);
+         }
+         _ASSERT(ptr->GetTypeID() == this->typeID);
+         return ptr;
       }
-      else return 0;
+      else return nullptr;
    }
 
    void BaseRef::set(Persistent* ptr) {
       if (ptr) {
          auto object = ObjectPreambule::fromPtr(ptr);
+         this->typeID = ptr->GetTypeID();
          this->segment = object->segmentIndex;
          this->offset = uintptr_t(ptr) - persistent_heap->MapSegment(this->segment)->GetBaseAddress();
+         (*(void**)ptr) = ObjectInfos[this->typeID]->VMT;
       }
       else this->_bits = 0;
    }
@@ -352,8 +364,10 @@ namespace wFS {
       if (ptr != prevPtr) {
          if (ptr) {
             auto object = ObjectPreambule::fromPtr(ptr);
+            this->typeID = ptr->GetTypeID();
             this->segment = object->segmentIndex;
             this->offset = uintptr_t(ptr) - persistent_heap->MapSegment(this->segment)->GetBaseAddress();
+            (*(void**)ptr) = ObjectInfos[this->typeID]->VMT;
          }
          if (prevPtr) {
             delete prevPtr;
@@ -370,6 +384,7 @@ namespace wFS {
    }
    void* Persistent::resize(Persistent* ptr, size_t newsize) {
       if (ptr) {
+         _ASSERT(ptr->GetTypeID() == 0);
          auto object = ObjectPreambule::fromPtr(ptr);
          newsize += sizeof(ObjectPreambule);
          if (newsize > object->size) {
@@ -381,8 +396,32 @@ namespace wFS {
          return ptr;
       }
       else {
-         return persistent_heap->AllocMemory(newsize);
+         ptr = (Persistent*)persistent_heap->AllocMemory(newsize);
+         ptr->Persistent::Persistent();
+         _ASSERT(ptr->GetTypeID() == 0);
+         return ptr;
       }
+   }
+
+   int Persistent::GetTypeID() {
+      return 0;
+   }
+
+   Persistent::Descriptor::Descriptor()
+      : VMT(nullptr), name(nullptr), typeID(0)
+   {
+      InitializationGuard();
+   }
+   void Persistent::Descriptor::complete(Persistent* instance) {
+      this->typeID = instance->GetTypeID();
+      this->VMT = (*(void**)instance);
+      if (this->typeID >= c_MaxTypeID) {
+         throw std::exception("Object infos have invalid typeID");
+      }
+      if (ObjectInfos[this->typeID]) {
+         throw std::exception("Object infos already declared");
+      }
+      ObjectInfos[this->typeID] = this;
    }
 
    void* String::operator new(size_t size, size_t count) {
@@ -410,7 +449,7 @@ namespace wFS {
          _BitScanReverse(&sizeL2, (size << 1) - 1);
          return sizeL2 - c_objectSizeMinL2;
 #endif
-      }
+}
       return 0;
    }
 
@@ -492,9 +531,18 @@ namespace wFS {
       // Push in free list
       else {
          tFreeObject* ref = (tFreeObject*)ObjectPreambule::toPtr(object);
+         ref->Persistent::Persistent();
          ref->next = this->freeObjects[sizeIndex];
          this->freeObjects[sizeIndex] = ref;
       }
+   }
+
+   void InitializationGuard() {
+      if (Initiate) return;
+      Initiate = true;
+      Persistent buffer;
+      auto descriptor = new Persistent::Descriptor();
+      descriptor->complete(&buffer);
    }
 }
 
