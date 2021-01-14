@@ -18,10 +18,18 @@ int main()
       std::ifstream file_in(inputFile);
       std::string str_in(std::istreambuf_iterator<char>(file_in.rdbuf()), std::istreambuf_iterator<char>());
 
-      auto result = wConvertRtf2Html(str_in.c_str(), str_in.size());
-      //auto result = wConvertRtf2InlineHtml(str_in.c_str(), str_in.size());
-      //auto result = wConvertRtf2Text(str_in.c_str(), str_in.size());
+      char* result = 0;
+
+      result = wConvertRtf2Html(str_in.c_str(), str_in.size());
       std::ofstream(inputFile + ".html") << result;
+      free(result);
+
+      result = wConvertRtf2InlineHtml(str_in.c_str(), str_in.size());
+      std::ofstream(inputFile + ".inline.html") << result;
+      free(result);
+
+      result = wConvertRtf2Text(str_in.c_str(), str_in.size());
+      std::ofstream(inputFile + ".txt") << result;
       std::cout << result;
       free(result);
 
