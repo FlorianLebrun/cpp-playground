@@ -1,0 +1,16 @@
+set(target wRtf2Html)
+
+set(files
+"rtf2html.cpp"
+"rtf_table.h"
+"rtf_table.cpp"
+"rtf_tools.h"
+"rtf_keyword.h"
+"rtf_keyword.cpp"
+"fmt_opts.h"
+"fmt_opts.cpp"
+)
+
+source_group("" FILES ${files})
+
+add_library(${target} SHARED ${files})

@@ -1,7 +1,6 @@
 #ifndef __RTF_H__
 #define __RTF_H__
 
-#include "config.h"
 #if defined(_STLP_DEBUG) && defined (__BORLANDC__)
    #include <stdio.h> // Just to make debug version of STLPort work under BC
 #endif

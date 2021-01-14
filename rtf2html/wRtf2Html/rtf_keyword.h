@@ -1,7 +1,6 @@
 #ifndef __RTF_KEYWORD_H__
 #define __RTF_KEYWORD_H__
 
-#include "config.h"
 #include <string>
 #include <cstdlib>
 #include <map>
