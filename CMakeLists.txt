@@ -5,7 +5,13 @@ project(Playground
   VERSION 1.0.0
 )
 
-add_subdirectory(./rtf2html)
+include(.tools/index.cmake)
+
+#add_subdirectory(./BloomFilter)
+add_subdirectory(./TestWithGoogleTest/GoogleTest)
+add_subdirectory(./TestWithGoogleTest/Test)
+#add_subdirectory(./Diff)
+#add_subdirectory(./rtf2html)
 #add_subdirectory(./CallStackAnalyzer)
 #add_subdirectory(./MarkdownParser)
 #add_subdirectory(./UrlParser)

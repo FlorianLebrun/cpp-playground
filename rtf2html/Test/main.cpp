@@ -13,7 +13,7 @@ int main()
 {
    try
    {
-      std::string inputFile = "Immediate Annuity.2.rtf";
+      std::string inputFile = "pictNotIgnored.rtf";
 
       std::ifstream file_in(inputFile);
       std::string str_in(std::istreambuf_iterator<char>(file_in.rdbuf()), std::istreambuf_iterator<char>());
