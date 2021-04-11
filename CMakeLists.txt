@@ -6,10 +6,13 @@ project(Playground
 )
 
 include(.tools/index.cmake)
+add_subdirectory(./boost_1_70_0)
 
+add_subdirectory(./TarganAlgorithm)
+#add_subdirectory(./PathUtils)
 #add_subdirectory(./BloomFilter)
-add_subdirectory(./TestWithGoogleTest/GoogleTest)
-add_subdirectory(./TestWithGoogleTest/Test)
+#add_subdirectory(./TestWithGoogleTest/GoogleTest)
+#add_subdirectory(./TestWithGoogleTest/Test)
 #add_subdirectory(./Diff)
 #add_subdirectory(./rtf2html)
 #add_subdirectory(./CallStackAnalyzer)
