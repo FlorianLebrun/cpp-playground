@@ -68,13 +68,10 @@ struct DependencyOrderingAlgorithm {
    std::unordered_map<Node, data_t> nodes;
    std::vector<component_t> components; // Strongly Connected Components (ie. SCC)
 
-   void process(Node* nodes, int count) {
-
-      // Register node/data pair for computing
-      for (int i = 0; i < count; i++) {
-         auto node = nodes[i];
-         this->nodes.insert({ node, data_t(node) });
-      }
+   void addNode(Node node) {
+      this->nodes.insert({ node, data_t(node) });
+   }
+   void process() {
 
       // Compute strongly connected components with Targan Algorithm
       // Note: the order in which the strongly connected components are identified constitutes
@@ -194,7 +191,9 @@ int main() {
       //reorderVector(n, { 5, 4, 3, 7, 1, 8, 6, 0, 2 });
 
       DependencyOrderingAlgorithm<tNode, tNode::GraphHandler> algo;
-      algo.process(n.data(), n.size());
+      // Register node/data pair for computing
+      for (int i = 0; i < n.size(); i++) algo.addNode(n[i]);
+      algo.process();
       algo.print();
 
       _ASSERT(algo.components.size() == 5);
