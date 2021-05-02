@@ -8,6 +8,7 @@ project(Playground
 include(.tools/index.cmake)
 add_subdirectory(./boost_1_70_0)
 
+add_subdirectory(./SmartConsole)
 add_subdirectory(./DeepLearningEP)
 #add_subdirectory(./TarganAlgorithm)
 #add_subdirectory(./PathUtils)
