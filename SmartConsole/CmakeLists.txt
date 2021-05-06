@@ -6,5 +6,5 @@ source_group("" FILES ${files})
 add_executable(${target} WIN32 ${files})
 set_target_properties(${target} PROPERTIES FOLDER "Any")
 target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
-target_link_libraries(${target} PUBLIC wininet)
+target_link_libraries(${target} PUBLIC wininet boost)
 

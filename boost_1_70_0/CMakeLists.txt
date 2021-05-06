@@ -11,7 +11,7 @@ getTargetCPUAddressMode(address_model)
 # Boost unpacking
 if(NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/bootstrap.bat")
 message(STATUS "Boost unpacking..." )
-exec_program(${CMAKE_COMMAND} "${CMAKE_BINARY_DIR}" ARGS -E tar x "${CMAKE_CURRENT_SOURCE_DIR}/boost_1_70_0.7z")
+exec_program(${CMAKE_COMMAND} "${CMAKE_CURRENT_BINARY_DIR}" ARGS -E tar x "${CMAKE_CURRENT_SOURCE_DIR}/boost_1_70_0-b.7z")
 endif()
 
 # Compile b2 tool
@@ -30,7 +30,6 @@ add_custom_command(OUTPUT ${BOOST_log_file} DEPENDS ${BOOST_b2}
       "--stagedir=${CMAKE_CURRENT_BINARY_DIR}/release"
       --build-type=minimal
       --with-log
-      --with-GIL
       -j8
       toolset=${toolset}
       address-model=${address_model}
@@ -43,7 +42,6 @@ add_custom_command(OUTPUT ${BOOST_log_file} DEPENDS ${BOOST_b2}
       "--stagedir=${CMAKE_CURRENT_BINARY_DIR}/debug"
       --build-type=minimal
       --with-log
-      --with-GIL
       -j8
       toolset=${toolset}
       address-model=${address_model}

@@ -1,6 +1,6 @@
 set(target DeepLearningEP)
 
-set(files main.cpp)
+set(files MNIST.h tensor.h main.cpp)
 
 source_group("" FILES ${files})
 add_executable(${target} WIN32 ${files})
