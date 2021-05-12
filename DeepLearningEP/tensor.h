@@ -1,6 +1,6 @@
 #pragma once
 
-inline void check(bool condition) { if (!condition) throw; }
+inline void checkAssert(bool condition) { if (!condition) throw; }
 
 typedef double Scalar;
 
@@ -9,7 +9,7 @@ struct Size {
    size_t count;
    size_t dim;
    Size(size_t dim, size_t s1 = 1, size_t s2 = 1, size_t s3 = 1, size_t s4 = 1) {
-      check(dim < 5);
+      checkAssert(dim < 5);
       this->dim = dim;
       this->count = s1 * s2 * s3 * s4;
       this->size[0] = s1;
@@ -26,7 +26,7 @@ struct Tensor {
       this->values.resize(size.count);
    }
    void fill(uint8_t* v, int n) {
-      check(values.size() == n);
+      checkAssert(values.size() == n);
       for (int i = 0; i < n; i++) {
          values[i] = (Scalar(v[i]) / 256.0);
       }

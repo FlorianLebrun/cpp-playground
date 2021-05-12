@@ -9,128 +9,168 @@
 #include "./tensor.h"
 #include "./MNIST.h"
 
-struct Neuron {
+struct Neuron;
+struct Link;
 
-   struct Link {
-      Neuron& input;
-      Scalar weight;
-      Link(Neuron& input, Scalar weight) : input(input), weight(weight) {}
-   };
+struct NeuronState {
+   bool activated : 1;
+   bool saturated : 1;
+   Scalar computed = 0.0;
+   Scalar expected = 0.0;
 
-   // Connection
-   std::vector<Link> links;
-   Scalar bias = 0.5;
-
-   // State
-   bool activate = false;
-   Scalar value = 0.0;
    Scalar error = 0.0;
+   Scalar innerError = 0.0;
 
+   void setInnerValue(Scalar value) {
+      this->expected = 0.0; // TODO: Maybe not useful
+      if (value > 0.0) {
+         this->activated = 1;
+         if (value > 1.0) {
+            this->saturated = 1;
+            this->computed = 1.0;
+         }
+         else {
+            this->saturated = 0;
+            this->computed = value;
+         }
+      }
+      else {
+         this->activated = 0;
+         this->computed = 0.0;
+      }
+   }
+   void check() {
+      checkAssert(this->computed >= 0.0 && this->computed <= 1.0);
+   }
+};
+
+struct NeuronLink {
+   NeuronState& input;
+   Scalar weight;
+   bool inhibitory : 1;
+   bool excitatory : 1;
+   NeuronLink(NeuronState& input, Scalar weight)
+      : input(input), weight(weight) {
+      if (this->weight > 0.0) {
+         this->inhibitory = 0;
+         this->excitatory = 1;
+      }
+      else {
+         this->inhibitory = 1;
+         this->excitatory = 0;
+      }
+   }
+   void check() {
+      checkAssert(this->excitatory ? this->weight >= 0.0 : this->weight <= 0.0);
+   }
+};
+
+struct NeuronLinks : std::vector<NeuronLink> {
+   Scalar forwardValue() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         acc += link.weight * link.input.computed;
+      }
+      return acc;
+   }
+   Scalar forwardExpectedValue() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (link.input.activated) {
+            acc += link.input.expected * link.weight;
+         }
+      }
+      return acc;
+   }
    Scalar weightPower() {
       Scalar acc = 0.0;
-      for (auto& link : this->links) {
-         if (link.input.activate) {
+      for (auto& link : *this) {
+         if (link.input.activated) {
             acc += link.weight * link.weight;
          }
       }
       return acc;
    }
-   Scalar errorPower() {
-      Scalar acc = 0.0;
-      for (auto& link : this->links) {
-         if (link.input.activate) {
-            acc += link.input.error * link.input.error;
-         }
-      }
-      return acc;
-   }
-   Scalar forwardError() {
-      Scalar acc = 0.0;
-      for (auto& link : this->links) {
-         if (link.input.activate) {
-            acc += link.input.error * link.weight;
-         }
-      }
-      return acc;
+
+};
+
+struct Neuron : NeuronState {
+   NeuronLinks links;
+   NeuronState bias; // Permanent inhibiter
+
+   Neuron() {
+      this->bias.setInnerValue(1.0);
+      this->links.push_back(NeuronLink(this->bias, -0.5));
    }
 
-   void impulse(Scalar impulseFactor) {
-      Scalar forwardError = this->forwardError();
-      Scalar forwardPower = this->weightPower();
-      if (forwardPower == 0.0) {
+   void check() {
+      this->NeuronState::check();
+      this->bias.check();
+      for (auto& link : this->links) {
+         link.check();
+      }
+   }
+
+   Scalar forwardError() {
+      return this->expected - this->links.forwardExpectedValue();
+   }
+
+   void backpropagateImpulse(Scalar impulseFactor) {
+      Scalar expectedValue = this->links.forwardExpectedValue();
+      Scalar weightPower = this->links.weightPower();
+      if (weightPower == 0.0) {
          return;
       }
-      Scalar impulse = impulseFactor * (this->error - forwardError) / forwardPower;
+      Scalar impulse = impulseFactor * (this->expected - expectedValue) / weightPower;
       for (auto& link : this->links) {
-         link.input.error += impulse * link.weight;
+         auto value = link.input.expected + impulse * link.weight;
+         if (value < 0.0) value = 0.0;
+         else if (value > 1.0) value = 1.0;
+         link.input.expected = value;
       }
-      Scalar newForwardError = this->forwardError();
-      if (abs(newForwardError - this->error) > abs(forwardError - this->error)) {
+   }
+
+   void updateError() {
+      this->error = this->links.forwardExpectedValue() - this->expected;
+
+      Scalar prev_error = abs(this->computed - this->expected);
+      Scalar new_error = abs(this->links.forwardExpectedValue() - this->expected);
+      if (new_error > prev_error) {
          printf("impulse issue\n");
       }
    }
 
    void learn(Scalar learningRate) {
-      Scalar forwardError = this->forwardError();
-      Scalar forwardPower = this->errorPower();
-      if (forwardPower == 0.0) {
-         return;
-      }
-      if (this->activate) {
-         Scalar impulse = learningRate * (this->error - forwardError) / forwardPower;
+      if (this->activated) {
+         Scalar value = this->links.forwardExpectedValue();
+         Scalar errorPower = 0.0;
+         int activatedLink = 0;
          for (auto& link : this->links) {
-            link.weight += impulse * link.input.error;
+            if (link.input.activated) {
+               errorPower += link.input.error * link.input.error;
+               activatedLink++;
+            }
          }
-         Scalar newForwardError = this->forwardError();
-         if (abs(newForwardError) > abs(forwardError)) {
-            printf("impulse issue\n");
+         if (errorPower > 0.0) {
+            Scalar impulse = learningRate * (this->expected - value) / errorPower;
+            for (auto& link : this->links) {
+               if (link.input.activated) {
+                  link.weight -= impulse * link.input.error;
+               }
+            }
+         }
+         Scalar newValue = this->links.forwardExpectedValue();
+         if (abs(newValue - this->expected) > abs(value - this->expected)) {
+            //printf("learn issue\n");
          }
       }
-      else {
-         if (this->value > 0.5) {
-            this->bias -= this->bias * learningRate * 0.01;
-         }
-         else {
-            this->bias -= this->bias * learningRate * 0.01;
-         }
-      }
-      this->bias = 0.5;
-   }
-
-   void feed(Scalar value) {
-      this->activate = true;
-      this->value = value;
-   }
-
-   void feedback(Scalar expectedValue) {
-      this->error = this->value - expectedValue;
    }
 
    void compute() {
-
-      // Clean error
-      this->error = 0.0;
-
-      // Vectorial projection
-      Scalar acc = 0;
-      for (auto& link : this->links) {
-         acc += link.weight * link.input.value;
-      }
-      this->value = acc + this->bias;
-
-      // Simplified Sigmoide activation
-      if (this->value < 0.0) {
-         this->activate = false;
-         this->value = 0.0;
-      }
-      else if (this->value > 1.0) {
-         this->activate = false;
-         this->value = 1.0;
-      }
-      else this->activate = true;
+      this->setInnerValue(this->links.forwardValue());
    }
    void connect(Neuron& neuron, Scalar weight) {
-      this->links.push_back(Link(neuron, weight));
+      this->links.push_back(NeuronLink(neuron, weight));
    }
 };
 
@@ -143,31 +183,38 @@ struct Layer {
          neurons.push_back(new Neuron());
       }
    }
+   void check() {
+      for (auto v : this->neurons) {
+         v->check();
+      }
+   }
    void feed(Tensor* data) {
-      check(data->values.size() == neurons.size());
+      checkAssert(data->values.size() == neurons.size());
       for (int i = 0; i < data->values.size(); i++) {
-         neurons[i]->feed(data->values[i]);
+         neurons[i]->setInnerValue(data->values[i]);
       }
    }
    void feedback(Tensor* data) {
       for (int i = 0; i < data->size.count; i++) {
-         neurons[i]->feedback(data->values[i]);
+         neurons[i]->expected = data->values[i];
       }
    }
    Scalar error() {
       Scalar acc = 0.0;
       for (auto v : this->neurons) {
-         acc += v->error * v->error;
+         auto err = v->computed - v->expected;
+         acc += err * err;
       }
       return acc;
    }
    void backpropagate() {
       //this->printFixedError();
-      for (auto v : this->neurons) v->impulse(1);
-      for (auto v : this->neurons) v->impulse(0.5);
-      for (auto v : this->neurons) v->impulse(0.25);
-      for (auto v : this->neurons) v->impulse(0.125);
-      for (auto v : this->neurons) v->impulse(0.0625);
+      for (auto v : this->neurons) v->backpropagateImpulse(1);
+      for (auto v : this->neurons) v->backpropagateImpulse(0.5);
+      for (auto v : this->neurons) v->backpropagateImpulse(0.25);
+      for (auto v : this->neurons) v->backpropagateImpulse(0.125);
+      for (auto v : this->neurons) v->backpropagateImpulse(0.0625);
+      for (auto v : this->neurons) v->updateError();
       //this->printFixedError();
    }
    void learn(Scalar learningRate) {
@@ -186,8 +233,8 @@ struct Layer {
       int disabled = 0;
       for (int i = 0; i < this->size.count; i++) {
          auto& neuron = *this->neurons[i];
-         if (neuron.activate) activated++;
-         else if (neuron.value > 0.5) saturated++;
+         if (neuron.saturated) saturated++;
+         if (neuron.activated) activated++;
          else disabled++;
       }
       printf("| Layer(%d): activated = %d, saturated = %d, disabled = %d / %d\n", this->name, activated, saturated, disabled, this->size.count);
@@ -196,7 +243,7 @@ struct Layer {
       printf("\n--------------------------\n");
       for (int i = 0; i < this->size.count; i++) {
          auto& neuron = *this->neurons[i];
-         if (neuron.activate) {
+         if (neuron.activated) {
             printf("%d: %.3lg \t-> %.3lg\n", i, neuron.error, neuron.forwardError());
          }
       }
@@ -206,8 +253,7 @@ struct Layer {
       printf("\n--------------------------\n");
       for (int i = 0; i < this->size.count; i++) {
          auto& neuron = *this->neurons[i];
-         Scalar expectedValue = neuron.value - neuron.error;
-         printf("%d: (%.3lg)\t%.3lg\n", i, expectedValue, neuron.value);
+         printf("%d: (%.3lg)\t%.3lg\n", i, neuron.expected, neuron.computed);
       }
       printf("> error: %lg\n", this->error());
    }
@@ -223,6 +269,11 @@ struct NeuralNetwork {
          connectFull(*input, *layer);
       }
       this->layers.push_back(layer);
+   }
+   void check() {
+      for (auto layer : this->layers) {
+         layer->check();
+      }
    }
    void feed(Tensor2D* inData) {
       this->layers[0]->feed(inData);
@@ -255,21 +306,23 @@ private:
       Scalar dispersion = 1.0 / in.neurons.size();
       for (auto vout : out.neurons) {
          for (auto vin : in.neurons) {
-            vout->connect(*vin, dispersion * randomScalar(0.0, 1.0));
+            vout->connect(*vin, dispersion * randomScalar(-1.0, 1.0));
          }
       }
    }
 };
 
-void main() {
+
+void testMNIST() {
    MNIST::UByteTensorFile images("D:/data/MNIST/train-images.idx3-ubyte");
    MNIST::UByteTensorFile labels("D:/data/MNIST/train-labels.idx1-ubyte");
 
    NeuralNetwork network;
 
    network.addLayer(Size(2, 28, 28));
-   network.addLayer(Size(2, 28, 28));
-   network.addLayer(Size(2, 28, 28));
+   network.addLayer(Size(1, 28 * 28));
+   network.addLayer(Size(1, 28 * 28 / 2));
+   network.addLayer(Size(1, 28 * 28 / 4));
    network.addLayer(Size(1, 10));
 
    if (0) {
@@ -297,6 +350,7 @@ void main() {
       Tensor2D* inData = images.getTensor2D(0);
       Tensor1D* outData = labels.getOrdinalTensor1D(0, 10);
       for (int k = 0; k < 1000; k++) {
+         network.check();
          network.feed(inData);
          network.feedback(outData);
          network.learn(learningRate);
@@ -306,3 +360,7 @@ void main() {
    }
 }
 
+
+void main() {
+   testMNIST();
+}

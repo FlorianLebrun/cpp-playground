@@ -26,11 +26,11 @@ struct uint32_HE_t {
 
       UByteTensorFile(std::string path) {
          std::ifstream f(path, std::ios_base::in | std::ios_base::binary);
-         check(f.is_open());
+         checkAssert(f.is_open());
 
          tHeader header;
          f.read((char*)&header, sizeof(tHeader));
-         check(header.dim <= 4);
+         checkAssert(header.dim <= 4);
          this->dim = header.dim - 1;
          this->datacount = header.count;
          this->datasize = 1;
