@@ -1,4 +1,6 @@
 #pragma once
+#include "tensor.h"
+#include <fstream>
 
 namespace MNIST {
 

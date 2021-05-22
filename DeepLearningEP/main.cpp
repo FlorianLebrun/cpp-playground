@@ -1,3 +1,5 @@
+#include "./tensor.h"
+#include "./MNIST.h"
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -6,41 +8,70 @@
 #include <map>
 #include <algorithm>
 #include <math.h>
-#include "./tensor.h"
-#include "./MNIST.h"
 
 struct Neuron;
 struct Link;
 
-struct NeuronState {
-   bool activated : 1;
-   bool saturated : 1;
-   Scalar computed = 0.0;
-   Scalar expected = 0.0;
+struct Value {
+   union {
+      struct {
+         uint8_t disabled : 1;
+         uint8_t saturated : 1;
+         uint8_t activated : 1;
+      };
+      uint8_t flags = 1;
+   };
+   Scalar value = 0.0;
+
+   __forceinline operator Scalar() {
+      return this->value;
+   }
+   __forceinline Value& operator = (Scalar value) {
+      if (value <= 0.0) {
+         this->flags = 1;
+         this->value = 0.0;
+      }
+      else if (value > 1.0) {
+         this->flags = 6;
+         this->value = 1.0;
+      }
+      else {
+         this->flags = 4;
+         this->value = value;
+      }
+      return *this;
+   }
+   void check() {
+      if (this->disabled) checkAssert(this->value == 0.0);
+      else if (this->saturated) checkAssert(this->value == 1.0);
+      else checkAssert(this->value >= 0.0 && this->value <= 1.0);
+   }
+};
+
+struct NeuronId {
+   int32_t index;
+   uint32_t layer;
+   NeuronId(int32_t index, uint32_t layer)
+      : index(index), layer(layer) {
+   }
+};
+
+struct NeuronState : Value {
+   NeuronId id;
+   Value computed;
+   Value expected;
 
    Scalar error = 0.0;
    Scalar innerError = 0.0;
 
+   NeuronState(NeuronId id) : id(id) {
+   }
    void setInnerValue(Scalar value) {
-      this->expected = 0.0; // TODO: Maybe not useful
-      if (value > 0.0) {
-         this->activated = 1;
-         if (value > 1.0) {
-            this->saturated = 1;
-            this->computed = 1.0;
-         }
-         else {
-            this->saturated = 0;
-            this->computed = value;
-         }
-      }
-      else {
-         this->activated = 0;
-         this->computed = 0.0;
-      }
+      this->expected = this->computed = value;
    }
    void check() {
-      checkAssert(this->computed >= 0.0 && this->computed <= 1.0);
+      this->computed.check();
+      this->expected.check();
    }
 };
 
@@ -51,7 +82,7 @@ struct NeuronLink {
    bool excitatory : 1;
    NeuronLink(NeuronState& input, Scalar weight)
       : input(input), weight(weight) {
-      if (this->weight > 0.0) {
+      if (weight > 0.0) {
          this->inhibitory = 0;
          this->excitatory = 1;
       }
@@ -66,19 +97,17 @@ struct NeuronLink {
 };
 
 struct NeuronLinks : std::vector<NeuronLink> {
-   Scalar forwardValue() {
+   Scalar value() {
       Scalar acc = 0.0;
       for (auto& link : *this) {
          acc += link.weight * link.input.computed;
       }
       return acc;
    }
-   Scalar forwardExpectedValue() {
+   Scalar expectedValue() {
       Scalar acc = 0.0;
       for (auto& link : *this) {
-         if (link.input.activated) {
-            acc += link.input.expected * link.weight;
-         }
+         acc += link.weight * link.input.expected;
       }
       return acc;
    }
@@ -91,6 +120,60 @@ struct NeuronLinks : std::vector<NeuronLink> {
       }
       return acc;
    }
+   Scalar unsaturatedErrorPower() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (!link.input.expected.saturated) {
+            acc += link.input.error * link.input.error;
+         }
+      }
+      return acc;
+   }
+   Scalar unsaturatedExpectedValue() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (!link.input.expected.saturated) {
+            acc += link.weight * link.input.expected;
+         }
+      }
+      return acc;
+   }
+   Scalar unsaturatedWeightPower() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (!link.input.expected.saturated) {
+            acc += link.weight * link.weight;
+         }
+      }
+      return acc;
+   }
+   Scalar undisabledErrorPower() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (!link.input.expected.disabled) {
+            acc += link.input.error * link.input.error;
+         }
+      }
+      return acc;
+   }
+   Scalar undisabledExpectedValue() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (!link.input.expected.disabled) {
+            acc += link.weight * link.input.expected;
+         }
+      }
+      return acc;
+   }
+   Scalar undisabledWeightPower() {
+      Scalar acc = 0.0;
+      for (auto& link : *this) {
+         if (!link.input.expected.disabled) {
+            acc += link.weight * link.weight;
+         }
+      }
+      return acc;
+   }
 
 };
 
@@ -98,9 +181,8 @@ struct Neuron : NeuronState {
    NeuronLinks links;
    NeuronState bias; // Permanent inhibiter
 
-   Neuron() {
-      this->bias.setInnerValue(1.0);
-      this->links.push_back(NeuronLink(this->bias, -0.5));
+   Neuron(NeuronId id) : NeuronState(id), bias(NeuronId(-id.index, id.layer)) {
+      this->links.push_back(NeuronLink(this->bias, 0.0));
    }
 
    void check() {
@@ -112,62 +194,74 @@ struct Neuron : NeuronState {
    }
 
    Scalar forwardError() {
-      return this->expected - this->links.forwardExpectedValue();
+      return this->expected - this->links.expectedValue();
    }
 
    void backpropagateImpulse(Scalar impulseFactor) {
-      Scalar expectedValue = this->links.forwardExpectedValue();
-      Scalar weightPower = this->links.weightPower();
-      if (weightPower == 0.0) {
-         return;
+      this->check();
+      Scalar forwardExpected = this->links.expectedValue();
+      if (this->expected > forwardExpected) {
+         Scalar weightPower = this->links.unsaturatedWeightPower();
+         Scalar impulse = impulseFactor * (this->expected - forwardExpected) / weightPower;
+         for (auto& link : this->links) {
+            if (!link.input.expected.saturated) {
+               link.input.expected = link.input.expected + impulse * link.weight;
+            }
+            else {
+               _ASSERT(link.input.expected == 1.0);
+            }
+         }
       }
-      Scalar impulse = impulseFactor * (this->expected - expectedValue) / weightPower;
-      for (auto& link : this->links) {
-         auto value = link.input.expected + impulse * link.weight;
-         if (value < 0.0) value = 0.0;
-         else if (value > 1.0) value = 1.0;
-         link.input.expected = value;
+      else {
+         Scalar weightPower = this->links.undisabledWeightPower();
+         Scalar impulse = impulseFactor * (this->expected - forwardExpected) / weightPower;
+         for (auto& link : this->links) {
+            if (!link.input.expected.disabled) {
+               link.input.expected = link.input.expected + impulse * link.weight;
+            }
+            else {
+               _ASSERT(link.input.expected == 0.0);
+            }
+         }
       }
    }
 
    void updateError() {
-      this->error = this->links.forwardExpectedValue() - this->expected;
-
-      Scalar prev_error = abs(this->computed - this->expected);
-      Scalar new_error = abs(this->links.forwardExpectedValue() - this->expected);
-      if (new_error > prev_error) {
-         printf("impulse issue\n");
-      }
+      this->error = this->computed - this->expected;
    }
 
    void learn(Scalar learningRate) {
-      if (this->activated) {
-         Scalar value = this->links.forwardExpectedValue();
-         Scalar errorPower = 0.0;
-         int activatedLink = 0;
-         for (auto& link : this->links) {
-            if (link.input.activated) {
-               errorPower += link.input.error * link.input.error;
-               activatedLink++;
-            }
-         }
+      if (this->computed < this->expected) {
+         Scalar errorPower = this->links.unsaturatedErrorPower();
          if (errorPower > 0.0) {
             Scalar impulse = learningRate * (this->expected - value) / errorPower;
             for (auto& link : this->links) {
-               if (link.input.activated) {
+               if (!link.input.expected.saturated) {
                   link.weight -= impulse * link.input.error;
                }
             }
          }
-         Scalar newValue = this->links.forwardExpectedValue();
-         if (abs(newValue - this->expected) > abs(value - this->expected)) {
-            //printf("learn issue\n");
+      }
+      else {
+         Scalar errorPower = this->links.undisabledErrorPower();
+         if (errorPower > 0.0) {
+            Scalar impulse = learningRate * (this->expected - value) / errorPower;
+            for (auto& link : this->links) {
+               if (!link.input.expected.disabled) {
+                  link.weight -= impulse * link.input.error;
+               }
+            }
          }
+      }
+      Scalar newValue = this->links.expectedValue();
+      if (abs(newValue - this->expected) > abs(value - this->expected)) {
+         //printf("learn issue\n");
       }
    }
 
    void compute() {
-      this->setInnerValue(this->links.forwardValue());
+      this->bias.setInnerValue(1.0);
+      this->setInnerValue(this->links.value());
    }
    void connect(Neuron& neuron, Scalar weight) {
       this->links.push_back(NeuronLink(neuron, weight));
@@ -175,12 +269,12 @@ struct Neuron : NeuronState {
 };
 
 struct Layer {
-   int name = 0;
+   uint32_t layerId = 0;
    std::vector<Neuron*> neurons;
    Size size;
    Layer(Size size) : size(size) {
       for (int i = 0; i < size.count; i++) {
-         neurons.push_back(new Neuron());
+         neurons.push_back(new Neuron(NeuronId(i, this->layerId)));
       }
    }
    void check() {
@@ -237,7 +331,7 @@ struct Layer {
          if (neuron.activated) activated++;
          else disabled++;
       }
-      printf("| Layer(%d): activated = %d, saturated = %d, disabled = %d / %d\n", this->name, activated, saturated, disabled, this->size.count);
+      printf("| Layer(%d): activated = %d, saturated = %d, disabled = %d / %d\n", this->layerId, activated, saturated, disabled, this->size.count);
    }
    void printErrors() {
       printf("\n--------------------------\n");
@@ -253,7 +347,7 @@ struct Layer {
       printf("\n--------------------------\n");
       for (int i = 0; i < this->size.count; i++) {
          auto& neuron = *this->neurons[i];
-         printf("%d: (%.3lg)\t%.3lg\n", i, neuron.expected, neuron.computed);
+         printf("%d: (%.3lg)\t%.3lg\n", i, Scalar(neuron.expected), Scalar(neuron.computed));
       }
       printf("> error: %lg\n", this->error());
    }
@@ -263,7 +357,7 @@ struct NeuralNetwork {
    std::vector<Layer*> layers;
    void addLayer(Size size) {
       Layer* layer = new Layer(size);
-      layer->name = this->layers.size();
+      layer->layerId = this->layers.size();
       if (this->layers.size()) {
          Layer* input = this->layers.back();
          connectFull(*input, *layer);
@@ -320,9 +414,9 @@ void testMNIST() {
    NeuralNetwork network;
 
    network.addLayer(Size(2, 28, 28));
-   network.addLayer(Size(1, 28 * 28));
-   network.addLayer(Size(1, 28 * 28 / 2));
-   network.addLayer(Size(1, 28 * 28 / 4));
+   //network.addLayer(Size(1, 28 * 28));
+   //network.addLayer(Size(1, 28 * 28 / 2));
+   //network.addLayer(Size(1, 28 * 28 / 4));
    network.addLayer(Size(1, 10));
 
    if (0) {
@@ -347,8 +441,9 @@ void testMNIST() {
    }
    else {
       Scalar learningRate = 0.1;
-      Tensor2D* inData = images.getTensor2D(0);
+      Tensor2D* inData = images.getTensor2D(1);
       Tensor1D* outData = labels.getOrdinalTensor1D(0, 10);
+      saveBitmap("test.bmp", inData);
       for (int k = 0; k < 1000; k++) {
          network.check();
          network.feed(inData);

@@ -1,4 +1,7 @@
 #pragma once
+#include <string>
+#include <vector>
+#include <math.h>
 
 inline void checkAssert(bool condition) { if (!condition) throw; }
 
@@ -47,10 +50,9 @@ struct Tensor2D : Tensor {
 };
 
 struct Tensor3D : Tensor {
-   std::vector<Scalar> values;
+   Tensor3D(int sx, int sy, int sz) : Tensor(Size(3, sx, sy, sz)) {
+   }
 };
 
-
-Scalar randomScalar(Scalar min, Scalar max) {
-   return min + (Scalar(rand()) / (Scalar(RAND_MAX) / (max - min)));
-}
+void saveBitmap(std::string path, Tensor* data);
+Scalar randomScalar(Scalar min, Scalar max);
