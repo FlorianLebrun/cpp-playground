@@ -1,8 +1,7 @@
-set(target TarganAlgorithm)
+set(target DiffAlgorithm)
 
-set(files main.cpp)
+append_group_sources(files FILTER "*.c|*.cpp|*.h|*.hpp" DIRECTORIES "./")
 
-source_group("" FILES ${files})
 add_executable(${target} WIN32 ${files})
 
 target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
