@@ -1,6 +1,6 @@
 set(target FileWatch)
 
-set(files main.cpp)
+append_group_sources(files FILTER "*.c|*.cpp|*.h|*.hpp" DIRECTORIES "./")
 
 source_group("" FILES ${files})
 add_executable(${target} WIN32 ${files})
