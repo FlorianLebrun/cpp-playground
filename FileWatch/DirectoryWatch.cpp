@@ -3,7 +3,7 @@
 #include <mutex>
 #include <windows.h>
 
-#define TRACE_WatchPool(x) x
+#define TRACE_WatchPool(x) //x
 
 struct DirectoryWatchEntry {
 
