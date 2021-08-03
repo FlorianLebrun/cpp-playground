@@ -1,0 +1,9 @@
+set(target SegmentAllocTable)
+
+append_group_sources(files FILTER "*.c|*.cpp|*.h|*.hpp" DIRECTORIES "./")
+
+add_executable(${target} WIN32 ${files})
+
+target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
+
+
