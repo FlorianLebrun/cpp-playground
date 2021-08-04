@@ -1,6 +1,6 @@
 set(target SegmentAllocTable)
 
-append_group_sources(files FILTER "*.c|*.cpp|*.h|*.hpp" DIRECTORIES "./")
+append_group_sources(files FILTER "*.c|*.cpp|*.h|*.hpp" DIRECTORIES "./" "./common")
 
 add_executable(${target} WIN32 ${files})
 
