@@ -146,6 +146,7 @@ struct tTest {
             int p = fastrand() % i;
             handler::free(objects[p]);
             objects[p] = objects[--i];
+            objects[i] = 0;
             ops++;
          }
       }
@@ -195,7 +196,7 @@ struct tTest {
          //this->apply_peak_drop<no_malloc_handler>(alloc_count, free_count);
          //this->apply_peak_drop<default_malloc_handler>(alloc_count, free_count);
          this->apply_peak_drop<sat_malloc_handler>(alloc_count, free_count);
-         this->apply_peak_drop<mi_malloc_handler>(alloc_count, free_count);
+         //this->apply_peak_drop<mi_malloc_handler>(alloc_count, free_count);
          printf("                     * * *\n");
       }
    }
@@ -214,8 +215,8 @@ void test_perf_alloc() {
 
    //test.test_sat_malloc_2();
    //test.test_alloc_perf();
-   test.test_fill_and_flush();
-   //test.test_peak_drop(10, 8);
+   test.test_peak_drop(10, 8);
+   //test.test_fill_and_flush();
    //test.test_multi_thread_perf();
    printf("------------------ end ------------------\n");
 }

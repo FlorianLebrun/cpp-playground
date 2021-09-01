@@ -21,13 +21,6 @@ address_t MemoryContext::BlockBin::pop() {
       auto index = lsb_64(availables);
       page->uses |= uint64_t(1) << index;
 
-      // On page is full
-      if (page->uses == page->usables) {
-         this->pages = page->next;
-         page->next = this->full_pages;
-         this->full_pages = page;
-      }
-
       // Compute block address
       uintptr_t ptr = (uintptr_t(index) * page->slabbing.packing) << page->slabbing.shift;
       ptr += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
@@ -35,6 +28,13 @@ address_t MemoryContext::BlockBin::pop() {
          ptr += (uintptr_t(page->page_index - 1) * page->size.packing) << page->size.shift;
       }
 
+      // On page is full
+      if (page->uses == page->usables) {
+         this->pages = page->next;
+         page->next = 0;
+         page->context_id = 0;
+      }
+      printf("%d\n", page->class_id);
       SAT_DEBUG(BlockLocation loc(g_space, ptr));
       SAT_ASSERT(loc.descriptor == page);
       SAT_ASSERT(loc.index == index);
@@ -74,7 +74,7 @@ tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
       page->block_ratio_shift = 32;
       page->page_index = index;
       page->segment_index = batch->segment_index;
-      page->marks = 0;
+      page->gc_marks = 0;
       page->uses = 0;
       page->usables = 0;
       page->shared_freemap = 0;
@@ -85,8 +85,12 @@ tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
    return 0;
 }
 
-void* MemoryContext::allocateSystemMemory(size_t length) {
-   return malloc(64 * length);
+void* MemoryContext::allocateSystemMemory(size_t length64) {
+   return malloc(64 * length64);
+}
+
+void MemoryContext::releaseSystemMemory(void* base, size_t length64) {
+   return free(base);
 }
 
 address_t MemoryContext::allocateBlock(size_t size) {
@@ -100,16 +104,30 @@ address_t MemoryContext::allocateBlock(size_t size) {
 }
 
 void MemoryContext::disposeBlock(address_t address) {
+   if (address.regionID != 1) throw;
    sat::BlockLocation block(this->space, address);
+   auto page = block.descriptor;
    uint64_t bit = uint64_t(1) << block.index;
-   SAT_ASSERT(block.descriptor->uses & bit);
-   if (block.descriptor->context_id == this->id) {
-      block.descriptor->uses &= ~bit;
+   SAT_ASSERT(page->uses & bit);
+   if (page->context_id == this->id) {
+      page->uses &= ~bit;
+      if (page->uses == 0) {
+         //printf("empty page\n");
+      }
    }
    else {
-      block.descriptor->shared_freemap.fetch_and(~bit);
-      printf("free %d->%d\n", this->id, block.descriptor->context_id);
-      throw "todo";
+      auto prev_freemap = page->shared_freemap.fetch_and(~bit);
+      if (prev_freemap == 0 && page->context_id == 0) {
+         _ASSERT(page->context_id == 0);
+         auto cls = sat::cBlockClassTable[page->class_id];
+         page->context_id = this->id;
+         cls->receivePartialPage(page, this);
+         //printf("unful page\n");
+      }
+      else {
+         printf("free %d->%d\n", this->id, page->context_id);
+         throw "todo";
+      }
    }
 }
 

@@ -27,7 +27,8 @@ namespace sat {
    struct MemoryDescriptor {
       uint64_t uses; // Bitmap of allocated entries
       uint64_t usables; // Bitmap of allocable entries
-      uint64_t marks; // Bitmap of marked entries
+      uint64_t gc_marks; // Bitmap of gc marked entries
+      uint64_t gc_analyzis; // Bitmap of gc analyzed entries
       uint32_t segment_index; // Absolute segment index
       sizeid_t size; // Memory size of entries
       sizeid_t slabbing; // Memory size of entries
@@ -41,7 +42,7 @@ namespace sat {
       uint8_t length;
       PageBatchDescriptor* next;
 
-      uint8_t __reserve[24];
+      uint8_t __reserve[16];
    } *tpPageBatchDescriptor;
    static_assert(sizeof(PageBatchDescriptor) == 64, "bad size");
 #pragma pack(pop)
@@ -53,7 +54,7 @@ namespace sat {
       uint8_t page_index; // Page index in a desriptors array, 0 when page is alone
       uint8_t block_ratio_shift; // Page index in a desriptors array, 0 when page is alone
 
-      uint8_t __reserve[14];
+      uint8_t __reserve[6];
       std::atomic_uint64_t shared_freemap;
       PageDescriptor* next; // Chaining slot to link page in a page queue
 
@@ -73,6 +74,7 @@ namespace sat {
       uint8_t binID = -1;
       BlockClass(uint8_t id);
       virtual address_t allocate(size_t target, MemoryContext* context) = 0;
+      virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) = 0;
       virtual size_t getSizeMax() = 0;
       virtual void print() = 0;
    };
@@ -123,7 +125,10 @@ namespace sat {
       address_t allocateBlock(size_t size);
       void disposeBlock(address_t ptr);
 
-      void* allocateSystemMemory(size_t length); // a block has 64 bytes
+      // System block allocation with 64 bytes packing
+      // note: length64 is a number of contigious 64 bytes chunks
+      void* allocateSystemMemory(size_t length64);
+      void releaseSystemMemory(void* base, size_t length64);
    };
 
    // Controller for secondary thread which have no heavy use of this allocator

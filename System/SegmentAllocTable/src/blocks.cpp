@@ -55,7 +55,7 @@ PageDescriptor* PagePnS1Class::allocate(MemoryContext* context) {
    batch->uses = 0;
    batch->length = this->page_per_batch;
    batch->segment_index = area.segmentIndex;
-   batch->marks = 0;
+   batch->gc_marks = 0;
    batch->class_id = this->id;
    batch->next = bin.batches;
    bin.batches = batch;
@@ -90,6 +90,12 @@ address_t BlockPnS1Class::allocate(size_t target, MemoryContext* context) {
    if (bin.pages->page_index != this->page_class->page_per_batch) bin.pages->usables = uint64_t(-1);
    else bin.pages->usables = this->page_last_usables;
    return bin.pop();
+}
+
+void BlockPnS1Class::receivePartialPage(tpPageDescriptor page, MemoryContext* context) {
+   auto& bin = context->blocks_bins[this->binID];
+   page->next = bin.pages;
+   bin.pages = page;
 }
 
 size_t BlockPnS1Class::getSizeMax() {
@@ -131,7 +137,7 @@ PageDescriptor* PagePnSnClass::allocate(MemoryContext* context) {
    batch->uses = 0;
    batch->length = this->page_per_batch;
    batch->segment_index = area.segmentIndex;
-   batch->marks = 0;
+   batch->gc_marks = 0;
    batch->next = bin.batches;
    bin.batches = batch;
 
@@ -168,6 +174,12 @@ address_t BlockPnSnClass::allocate(size_t target, MemoryContext* context) {
    return bin.pop();
 }
 
+void BlockPnSnClass::receivePartialPage(tpPageDescriptor page, MemoryContext* context) {
+   auto& bin = context->blocks_bins[this->binID];
+   page->next = bin.pages;
+   bin.pages = page;
+}
+
 void BlockPnSnClass::print() {
    printf("block %d [pnsn]\n", this->getSizeMax());
 }
@@ -195,7 +207,7 @@ PageDescriptor* PageP1SnClass::allocate(MemoryContext* context) {
    page->block_ratio_shift = 32;
    page->page_index = 0;
    page->segment_index = area.segmentIndex;
-   page->marks = 0;
+   page->gc_marks = 0;
    page->uses = 0;
    page->usables = 0;
    page->shared_freemap = 0;
@@ -233,6 +245,12 @@ address_t BlockP1SnClass::allocate(size_t target, MemoryContext* context) {
    return bin.pop();
 }
 
+void BlockP1SnClass::receivePartialPage(tpPageDescriptor page, MemoryContext* context) {
+   auto& bin = context->blocks_bins[this->binID];
+   page->next = bin.pages;
+   bin.pages = page;
+}
+
 void BlockP1SnClass::print() {
    printf("block %d [p1sn]\n", this->getSizeMax());
 }
@@ -255,7 +273,8 @@ address_t BlockSubunitSpanClass::allocate(size_t target, MemoryContext* context)
    auto page = (PageDescriptor*)context->allocateSystemMemory(1);
    page->context_id = context->id;
    page->class_id = this->id;
-   page->usables = 0;
+   page->uses = 1;
+   page->usables = 1;
    page->page_index = 0;
    page->segment_index = area.segmentIndex;
 
@@ -269,6 +288,24 @@ address_t BlockSubunitSpanClass::allocate(size_t target, MemoryContext* context)
       entry.reference = uintptr_t(page);
    }
    return area;
+}
+
+void BlockSubunitSpanClass::receivePartialPage(tpPageDescriptor page, MemoryContext* context) {
+   address_t area = 0;
+   area.segmentIndex = page->segment_index;
+
+   // Clean segments in table
+   uint32_t entries_count = 0;
+   auto* entries = &context->space->regions[area.regionID]->segments_table[area.segmentID];
+   while (entries[entries_count].reference == uintptr_t(page)) {
+      entries[entries_count].pagingID = 0;
+      entries[entries_count].reference = 0;
+      entries_count++;
+   }
+
+   // Release memory
+   context->space->releaseSegmentSpan(page->segment_index, entries_count);
+   context->releaseSystemMemory(page, 1);
 }
 
 size_t BlockSubunitSpanClass::getSizeMax() {
@@ -297,11 +334,12 @@ address_t BlockUnitSpanClass::allocate(size_t target, MemoryContext* context) {
    // Create a descriptor for this block
    auto page = (PageDescriptor*)context->allocateSystemMemory(1);
    page->context_id = context->id;
-   page->usables = 0;
+   page->uses = 1;
+   page->usables = 1;
    page->page_index = 0;
    page->segment_index = area.segmentIndex;
 
-   // Mark block segments in table
+   // Mark segments in table
    auto* entries = &context->space->regions[area.regionID]->segments_table[area.segmentID];
    auto entries_count = unit_count << cSegmentPerUnitL2;
    for (uint32_t i = 0; i < entries_count; i++) {
@@ -311,6 +349,24 @@ address_t BlockUnitSpanClass::allocate(size_t target, MemoryContext* context) {
       entry.reference = uintptr_t(page);
    }
    return area;
+}
+
+void BlockUnitSpanClass::receivePartialPage(tpPageDescriptor page, MemoryContext* context) {
+   address_t area = 0;
+   area.segmentIndex = page->segment_index;
+
+   // Clean segments in table
+   uint32_t entries_count = 0;
+   auto* entries = &context->space->regions[area.regionID]->segments_table[area.segmentID];
+   while (entries[entries_count].reference == uintptr_t(page)) {
+      entries[entries_count].pagingID = 0;
+      entries[entries_count].reference = 0;
+      entries_count++;
+   }
+
+   // Release memory
+   context->space->releaseSegmentSpan(page->segment_index, entries_count);
+   context->releaseSystemMemory(page, 1);
 }
 
 void BlockUnitSpanClass::print() {

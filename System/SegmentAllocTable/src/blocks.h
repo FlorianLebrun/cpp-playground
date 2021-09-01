@@ -29,6 +29,7 @@ namespace sat {
 
       BlockPnS1Class(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, PagePnS1Class* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
+      virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
       virtual size_t getSizeMax() override final;
       virtual void print() override final;
    };
@@ -54,6 +55,7 @@ namespace sat {
       PagePnSnClass* page_class;
       BlockPnSnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PagePnSnClass* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
+      virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
       virtual size_t getSizeMax() override { return sizing.size(); }
       virtual void print() override final;
    };
@@ -78,6 +80,7 @@ namespace sat {
       PageClass* page_class;
       BlockP1SnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PageP1SnClass* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
+      virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
       virtual size_t getSizeMax() override { return sizing.size(); }
       virtual void print() override final;
    };
@@ -94,6 +97,7 @@ namespace sat {
       uint16_t lengthL2;
       BlockSubunitSpanClass(uint8_t id, uint8_t packing, uint16_t lengthL2);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
+      virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
       virtual size_t getSizeMax() override final;
       virtual void print() override final;
    };
@@ -108,6 +112,7 @@ namespace sat {
    struct BlockUnitSpanClass : BlockClass {
       BlockUnitSpanClass(uint8_t id);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
+      virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
       virtual size_t getSizeMax() { return 1 << 31; }
       virtual void print() override final;
    };
