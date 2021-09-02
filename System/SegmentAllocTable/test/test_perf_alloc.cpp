@@ -138,8 +138,9 @@ struct tTest {
       while (i < count) {
          for (int k = 0; k < alloc_count; k++) {
             int size = sizeMin + (sizeDelta ? fastrand() % sizeDelta : 0);
-            auto ptr = objects[i++] = handler::malloc(size);
-            if (!ptr) throw;
+            auto ptr = handler::malloc(size);
+            for (intptr_t k = 0; k < i; k++) SAT_ASSERT(objects[k] != ptr);
+            objects[i++] = ptr;
             ops++;
          }
          for (int k = 0; k < free_count; k++) {

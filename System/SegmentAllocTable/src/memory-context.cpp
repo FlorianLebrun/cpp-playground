@@ -14,10 +14,23 @@ MemoryContext::MemoryContext(MemorySpace* space, uint8_t id) : space(space), id(
 }
 
 address_t MemoryContext::BlockBin::pop() {
-   if (auto page = this->pages) {
+   while (auto page = this->pages) {
+
+      // Compute available block in page
+      uint64_t availables = page->usables ^ page->uses;
+      if (availables == 0) {
+         availables = page->shared_freemap.exchange(0);
+         if (availables == 0) {
+            this->pages = page->next;
+            page->next = 0;
+            page->context_id = 0;
+            continue;
+         }
+         page->uses ^= availables;
+      }
 
       // Find index and tag it
-      uint64_t availables = page->usables ^ page->uses;
+      SAT_ASSERT(availables != 0);
       auto index = lsb_64(availables);
       page->uses |= uint64_t(1) << index;
 
@@ -28,13 +41,6 @@ address_t MemoryContext::BlockBin::pop() {
          ptr += (uintptr_t(page->page_index - 1) * page->size.packing) << page->size.shift;
       }
 
-      // On page is full
-      if (page->uses == page->usables) {
-         this->pages = page->next;
-         page->next = 0;
-         page->context_id = 0;
-      }
-      printf("%d\n", page->class_id);
       SAT_DEBUG(BlockLocation loc(g_space, ptr));
       SAT_ASSERT(loc.descriptor == page);
       SAT_ASSERT(loc.index == index);
@@ -52,11 +58,11 @@ tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
 
       // Find index and tag it
       uint64_t availables = batch->usables ^ batch->uses;
+      SAT_ASSERT(availables != 0);
       size_t index = lsb_64(availables);
       batch->uses |= uint64_t(1) << index;
       index++;
 
-      SAT_ASSERT(availables != 0);
 
       // On batch is full
       if (batch->uses == batch->usables) {
@@ -108,15 +114,16 @@ void MemoryContext::disposeBlock(address_t address) {
    sat::BlockLocation block(this->space, address);
    auto page = block.descriptor;
    uint64_t bit = uint64_t(1) << block.index;
+   //printf("dispose %.8X\n", address.ptr);
    SAT_ASSERT(page->uses & bit);
    if (page->context_id == this->id) {
       page->uses &= ~bit;
       if (page->uses == 0) {
-         //printf("empty page\n");
+         //printf("empty page %.8X\n", address.ptr);
       }
    }
    else {
-      auto prev_freemap = page->shared_freemap.fetch_and(~bit);
+      auto prev_freemap = page->shared_freemap.fetch_or(bit);
       if (prev_freemap == 0 && page->context_id == 0) {
          _ASSERT(page->context_id == 0);
          auto cls = sat::cBlockClassTable[page->class_id];
