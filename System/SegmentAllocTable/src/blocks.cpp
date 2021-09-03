@@ -191,8 +191,8 @@ PageDescriptor* PageP1SnClass::allocate(MemoryContext* context) {
 
    auto page = tpPageDescriptor(context->allocateSystemMemory(1));
    page->context_id = context->id;
-   page->class_id = this->id;
-   page->block_ratio_shift = 32;
+   page->class_id = 0;
+   page->block_ratio_shift = 0;
    page->page_index = 0;
    page->segment_index = area.segmentIndex;
    page->gc_marks = 0;
@@ -227,6 +227,7 @@ address_t BlockP1SnClass::allocate(size_t target, MemoryContext* context) {
       return block;
    }
    bin.pages = this->page_class->allocate(context);
+   bin.pages->class_id = this->id;
    bin.pages->block_ratio_shift = this->block_ratio_shift;
    bin.pages->usables = this->block_usables;
    return bin.pop();

@@ -88,79 +88,79 @@ sat::PageClass* sat::cPageClassTable[25] = {
    &page_24
 };
 
-static sat::BlockPnS1Class block_0(0, 0, 1, 4, &page_0);
-static sat::BlockPnS1Class block_1(1, 1, 1, 5, &page_1);
-static sat::BlockPnS1Class block_2(2, 2, 3, 4, &page_2);
-static sat::BlockPnS1Class block_3(3, 3, 1, 6, &page_3);
-static sat::BlockPnS1Class block_4(4, 4, 5, 4, &page_4);
-static sat::BlockPnS1Class block_5(5, 5, 3, 5, &page_5);
-static sat::BlockPnS1Class block_6(6, 6, 7, 4, &page_6);
-static sat::BlockPnS1Class block_7(7, 7, 1, 7, &page_7);
-static sat::BlockPnS1Class block_8(8, 8, 5, 5, &page_8);
-static sat::BlockPnS1Class block_9(9, 9, 3, 6, &page_9);
-static sat::BlockPnS1Class block_10(10, 10, 7, 5, &page_10);
-static sat::BlockPnS1Class block_11(11, 11, 1, 8, &page_11);
-static sat::BlockPnS1Class block_12(12, 12, 5, 6, &page_12);
-static sat::BlockPnS1Class block_13(13, 13, 3, 7, &page_13);
-static sat::BlockPnS1Class block_14(14, 14, 7, 6, &page_14);
-static sat::BlockPnS1Class block_15(15, 15, 1, 9, &page_15);
-static sat::BlockPnS1Class block_16(16, 16, 5, 7, &page_16);
-static sat::BlockPnS1Class block_17(17, 17, 3, 8, &page_17);
-static sat::BlockPnS1Class block_18(18, 18, 7, 7, &page_18);
-static sat::BlockP1SnClass block_19(19, 19, 1, 10, 6, &page_19);
-static sat::BlockPnSnClass block_20(20, 20, 5, 8, 6, &page_20);
-static sat::BlockPnSnClass block_21(21, 21, 3, 9, 6, &page_21);
-static sat::BlockPnSnClass block_22(22, 22, 7, 8, 6, &page_22);
-static sat::BlockP1SnClass block_23(23, 23, 1, 11, 5, &page_19);
-static sat::BlockPnSnClass block_24(24, 24, 5, 9, 5, &page_20);
-static sat::BlockPnSnClass block_25(25, 25, 3, 10, 5, &page_21);
-static sat::BlockPnSnClass block_26(26, 26, 7, 9, 5, &page_22);
-static sat::BlockP1SnClass block_27(27, 27, 1, 12, 4, &page_19);
-static sat::BlockPnSnClass block_28(28, 28, 5, 10, 4, &page_20);
-static sat::BlockPnSnClass block_29(29, 29, 3, 11, 4, &page_21);
-static sat::BlockPnSnClass block_30(30, 30, 7, 10, 4, &page_22);
-static sat::BlockP1SnClass block_31(31, 31, 1, 13, 3, &page_19);
-static sat::BlockPnSnClass block_32(32, 32, 5, 11, 3, &page_20);
-static sat::BlockPnSnClass block_33(33, 33, 3, 12, 3, &page_21);
-static sat::BlockPnSnClass block_34(34, 34, 7, 11, 3, &page_22);
-static sat::BlockP1SnClass block_35(35, 35, 1, 14, 2, &page_19);
-static sat::BlockPnSnClass block_36(36, 36, 5, 12, 2, &page_20);
-static sat::BlockPnSnClass block_37(37, 37, 3, 13, 2, &page_21);
-static sat::BlockPnSnClass block_38(38, 38, 7, 12, 2, &page_22);
-static sat::BlockP1SnClass block_39(39, 39, 1, 15, 1, &page_19);
-static sat::BlockPnSnClass block_40(40, 40, 5, 13, 1, &page_20);
-static sat::BlockPnSnClass block_41(41, 41, 3, 14, 1, &page_21);
-static sat::BlockPnSnClass block_42(42, 42, 7, 13, 1, &page_22);
-static sat::BlockSubunitSpanClass block_43(43, 1, 16);
-static sat::BlockPnSnClass block_44(44, 43, 5, 14, 0, &page_20);
-static sat::BlockPnSnClass block_45(45, 44, 3, 15, 0, &page_21);
-static sat::BlockPnSnClass block_46(46, 45, 7, 14, 0, &page_22);
-static sat::BlockSubunitSpanClass block_47(47, 1, 17);
-static sat::BlockP1SnClass block_48(48, 46, 5, 15, 1, &page_23);
-static sat::BlockSubunitSpanClass block_49(49, 3, 16);
-static sat::BlockP1SnClass block_50(50, 47, 7, 15, 1, &page_24);
-static sat::BlockSubunitSpanClass block_51(51, 1, 18);
-static sat::BlockSubunitSpanClass block_52(52, 5, 16);
-static sat::BlockSubunitSpanClass block_53(53, 3, 17);
-static sat::BlockSubunitSpanClass block_54(54, 7, 16);
-static sat::BlockSubunitSpanClass block_55(55, 1, 19);
-static sat::BlockSubunitSpanClass block_56(56, 5, 17);
-static sat::BlockSubunitSpanClass block_57(57, 3, 18);
-static sat::BlockSubunitSpanClass block_58(58, 7, 17);
-static sat::BlockSubunitSpanClass block_59(59, 1, 20);
-static sat::BlockSubunitSpanClass block_60(60, 5, 18);
-static sat::BlockSubunitSpanClass block_61(61, 3, 19);
-static sat::BlockSubunitSpanClass block_62(62, 7, 18);
-static sat::BlockSubunitSpanClass block_63(63, 1, 21);
-static sat::BlockSubunitSpanClass block_64(64, 5, 19);
-static sat::BlockSubunitSpanClass block_65(65, 3, 20);
-static sat::BlockSubunitSpanClass block_66(66, 7, 19);
-static sat::BlockUnitSpanClass block_67(67);
-static sat::BlockSubunitSpanClass block_68(68, 5, 20);
-static sat::BlockSubunitSpanClass block_69(69, 3, 21);
-static sat::BlockSubunitSpanClass block_70(70, 7, 20);
-static sat::BlockSubunitSpanClass block_71(71, 5, 21);
-static sat::BlockSubunitSpanClass block_72(72, 7, 21);
+static sat::BlockPnS1Class block_0(0, 0, 1, 4, &page_0); // sizeof 16
+static sat::BlockPnS1Class block_1(1, 1, 1, 5, &page_1); // sizeof 32
+static sat::BlockPnS1Class block_2(2, 2, 3, 4, &page_2); // sizeof 48
+static sat::BlockPnS1Class block_3(3, 3, 1, 6, &page_3); // sizeof 64
+static sat::BlockPnS1Class block_4(4, 4, 5, 4, &page_4); // sizeof 80
+static sat::BlockPnS1Class block_5(5, 5, 3, 5, &page_5); // sizeof 96
+static sat::BlockPnS1Class block_6(6, 6, 7, 4, &page_6); // sizeof 112
+static sat::BlockPnS1Class block_7(7, 7, 1, 7, &page_7); // sizeof 128
+static sat::BlockPnS1Class block_8(8, 8, 5, 5, &page_8); // sizeof 160
+static sat::BlockPnS1Class block_9(9, 9, 3, 6, &page_9); // sizeof 192
+static sat::BlockPnS1Class block_10(10, 10, 7, 5, &page_10); // sizeof 224
+static sat::BlockPnS1Class block_11(11, 11, 1, 8, &page_11); // sizeof 256
+static sat::BlockPnS1Class block_12(12, 12, 5, 6, &page_12); // sizeof 320
+static sat::BlockPnS1Class block_13(13, 13, 3, 7, &page_13); // sizeof 384
+static sat::BlockPnS1Class block_14(14, 14, 7, 6, &page_14); // sizeof 448
+static sat::BlockPnS1Class block_15(15, 15, 1, 9, &page_15); // sizeof 512
+static sat::BlockPnS1Class block_16(16, 16, 5, 7, &page_16); // sizeof 640
+static sat::BlockPnS1Class block_17(17, 17, 3, 8, &page_17); // sizeof 768
+static sat::BlockPnS1Class block_18(18, 18, 7, 7, &page_18); // sizeof 896
+static sat::BlockP1SnClass block_19(19, 19, 1, 10, 6, &page_19); // sizeof 1024
+static sat::BlockPnSnClass block_20(20, 20, 5, 8, 6, &page_20); // sizeof 1280
+static sat::BlockPnSnClass block_21(21, 21, 3, 9, 6, &page_21); // sizeof 1536
+static sat::BlockPnSnClass block_22(22, 22, 7, 8, 6, &page_22); // sizeof 1792
+static sat::BlockP1SnClass block_23(23, 23, 1, 11, 5, &page_19); // sizeof 2048
+static sat::BlockPnSnClass block_24(24, 24, 5, 9, 5, &page_20); // sizeof 2560
+static sat::BlockPnSnClass block_25(25, 25, 3, 10, 5, &page_21); // sizeof 3072
+static sat::BlockPnSnClass block_26(26, 26, 7, 9, 5, &page_22); // sizeof 3584
+static sat::BlockP1SnClass block_27(27, 27, 1, 12, 4, &page_19); // sizeof 4096
+static sat::BlockPnSnClass block_28(28, 28, 5, 10, 4, &page_20); // sizeof 5120
+static sat::BlockPnSnClass block_29(29, 29, 3, 11, 4, &page_21); // sizeof 6144
+static sat::BlockPnSnClass block_30(30, 30, 7, 10, 4, &page_22); // sizeof 7168
+static sat::BlockP1SnClass block_31(31, 31, 1, 13, 3, &page_19); // sizeof 8192
+static sat::BlockPnSnClass block_32(32, 32, 5, 11, 3, &page_20); // sizeof 10240
+static sat::BlockPnSnClass block_33(33, 33, 3, 12, 3, &page_21); // sizeof 12288
+static sat::BlockPnSnClass block_34(34, 34, 7, 11, 3, &page_22); // sizeof 14336
+static sat::BlockP1SnClass block_35(35, 35, 1, 14, 2, &page_19); // sizeof 16384
+static sat::BlockPnSnClass block_36(36, 36, 5, 12, 2, &page_20); // sizeof 20480
+static sat::BlockPnSnClass block_37(37, 37, 3, 13, 2, &page_21); // sizeof 24576
+static sat::BlockPnSnClass block_38(38, 38, 7, 12, 2, &page_22); // sizeof 28672
+static sat::BlockP1SnClass block_39(39, 39, 1, 15, 1, &page_19); // sizeof 32768
+static sat::BlockPnSnClass block_40(40, 40, 5, 13, 1, &page_20); // sizeof 40960
+static sat::BlockPnSnClass block_41(41, 41, 3, 14, 1, &page_21); // sizeof 49152
+static sat::BlockPnSnClass block_42(42, 42, 7, 13, 1, &page_22); // sizeof 57344
+static sat::BlockSubunitSpanClass block_43(43, 1, 16); // sizeof 65536
+static sat::BlockPnSnClass block_44(44, 43, 5, 14, 0, &page_20); // sizeof 81920
+static sat::BlockPnSnClass block_45(45, 44, 3, 15, 0, &page_21); // sizeof 98304
+static sat::BlockPnSnClass block_46(46, 45, 7, 14, 0, &page_22); // sizeof 114688
+static sat::BlockSubunitSpanClass block_47(47, 1, 17); // sizeof 131072
+static sat::BlockP1SnClass block_48(48, 46, 5, 15, 1, &page_23); // sizeof 163840
+static sat::BlockSubunitSpanClass block_49(49, 3, 16); // sizeof 196608
+static sat::BlockP1SnClass block_50(50, 47, 7, 15, 1, &page_24); // sizeof 229376
+static sat::BlockSubunitSpanClass block_51(51, 1, 18); // sizeof 262144
+static sat::BlockSubunitSpanClass block_52(52, 5, 16); // sizeof 327680
+static sat::BlockSubunitSpanClass block_53(53, 3, 17); // sizeof 393216
+static sat::BlockSubunitSpanClass block_54(54, 7, 16); // sizeof 458752
+static sat::BlockSubunitSpanClass block_55(55, 1, 19); // sizeof 524288
+static sat::BlockSubunitSpanClass block_56(56, 5, 17); // sizeof 655360
+static sat::BlockSubunitSpanClass block_57(57, 3, 18); // sizeof 786432
+static sat::BlockSubunitSpanClass block_58(58, 7, 17); // sizeof 917504
+static sat::BlockSubunitSpanClass block_59(59, 1, 20); // sizeof 1048576
+static sat::BlockSubunitSpanClass block_60(60, 5, 18); // sizeof 1310720
+static sat::BlockSubunitSpanClass block_61(61, 3, 19); // sizeof 1572864
+static sat::BlockSubunitSpanClass block_62(62, 7, 18); // sizeof 1835008
+static sat::BlockSubunitSpanClass block_63(63, 1, 21); // sizeof 2097152
+static sat::BlockSubunitSpanClass block_64(64, 5, 19); // sizeof 2621440
+static sat::BlockSubunitSpanClass block_65(65, 3, 20); // sizeof 3145728
+static sat::BlockSubunitSpanClass block_66(66, 7, 19); // sizeof 3670016
+static sat::BlockUnitSpanClass block_67(67); // sizeof -1
+static sat::BlockSubunitSpanClass block_68(68, 5, 20); // sizeof 5242880
+static sat::BlockSubunitSpanClass block_69(69, 3, 21); // sizeof 6291456
+static sat::BlockSubunitSpanClass block_70(70, 7, 20); // sizeof 7340032
+static sat::BlockSubunitSpanClass block_71(71, 5, 21); // sizeof 10485760
+static sat::BlockSubunitSpanClass block_72(72, 7, 21); // sizeof 14680064
 
 sat::BlockClass* sat::cBlockBinTable[48] = {
    &block_0, &block_1, &block_2, &block_3, &block_4, &block_5, &block_6, &block_7,

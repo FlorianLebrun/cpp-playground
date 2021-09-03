@@ -29,6 +29,7 @@ class BlockClass {
     print() { console.log(this.prototype.name) }
     getDecl() { return `decl_not_found_${this.getName()};` }
     getName() { return `block_${this.id}` }
+    getSize() { return -1 }
 }
 
 function NumberToFixedPoint32(value) {
@@ -69,6 +70,9 @@ class BlockPnS1Class extends BlockClass {
     }
     setup() {
         this.binID = this.model.addBlockBin(this)
+    }
+    getSize() {
+        return this.packing * Math.pow(2, this.shift)
     }
     getDecl() {
         return `static sat::BlockPnS1Class ${this.getName()}(${this.id}, ${this.binID}, ${this.packing}, ${this.shift}, &${this.page.getName()});`
@@ -126,6 +130,9 @@ class BlockPnSnClass extends BlockClass {
         if (other.shift != this.shift) return false
         return true
     }
+    getSize() {
+        return this.packing * Math.pow(2, this.shift)
+    }
     getDecl() {
         return `static sat::BlockPnSnClass ${this.getName()}(${this.id}, ${this.binID}, ${this.packing}, ${this.shift}, ${this.block_per_page_L2}, &${this.page.getName()});`
     }
@@ -175,6 +182,9 @@ class BlockP1SnClass extends BlockClass {
     setup() {
         this.binID = this.model.addBlockBin(this)
     }
+    getSize() {
+        return this.packing * Math.pow(2, this.shift)
+    }
     getDecl() {
         return `static sat::BlockP1SnClass ${this.getName()}(${this.id}, ${this.binID}, ${this.packing}, ${this.shift}, ${this.block_per_page_L2}, &${this.page.getName()});`
     }
@@ -193,6 +203,9 @@ class BlockSubunitSpanClass extends BlockClass {
         super(model, data)
         this.packing = data.packing
         this.shift = getMinBits(data.base)
+    }
+    getSize() {
+        return this.packing * Math.pow(2, this.shift)
     }
     getDecl() {
         return `static sat::BlockSubunitSpanClass ${this.getName()}(${this.id}, ${this.packing}, ${this.shift});`
@@ -364,7 +377,7 @@ sat::PageClass* sat::cPageClassTable[${model.pageClasses.length}] = {
 ${arrayText(model.pageClasses.map(x => "&" + x.getName()), 8, ",", "   ")}
 };
 
-${arrayText(model.blockClasses.map(x => x.getDecl()))}
+${arrayText(model.blockClasses.map(x => x.getDecl() + ` // sizeof ${x.getSize()}`))}
 
 sat::BlockClass* sat::cBlockBinTable[${model.blockBins.length}] = {
 ${arrayText(model.blockBins.map(x => "&" + x.getName()), 8, ",", "   ")}

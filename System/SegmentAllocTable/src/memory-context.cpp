@@ -46,6 +46,15 @@ address_t MemoryContext::BlockBin::pop() {
          ptr += (uintptr_t(page->page_index - 1) * this->page_size.packing) << this->page_size.shift;
       }
 
+      uintptr_t block_index = uintptr_t(index);
+      if (page->page_index) {
+         block_index += uintptr_t(page->page_index - 1) << (32 - page->block_ratio_shift);
+      }
+      uintptr_t ptr2 = (block_index * this->block_size.packing) << this->block_size.shift;
+      ptr2 += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
+
+      SAT_ASSERT(ptr == ptr2);
+
       SAT_DEBUG(BlockLocation loc(g_space, ptr));
       SAT_ASSERT(loc.descriptor == page);
       SAT_ASSERT(loc.index == index);
@@ -80,7 +89,7 @@ tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
       auto page = tpPageDescriptor(&batch[index]);
       page->context_id = context->id;
       page->class_id = 0;
-      page->block_ratio_shift = 32;
+      page->block_ratio_shift = 0;
       page->page_index = index;
       page->segment_index = batch->segment_index;
       page->gc_marks = 0;

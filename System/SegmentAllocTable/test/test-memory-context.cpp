@@ -64,7 +64,7 @@ void test_objects_allocate() {
 
    sat::printAllBlocks();
 
-   if (0) {
+   if (1) {
       address_t ptr;
       ptr = context.allocateBlock(4086);
       printf("allocate at 0x%.12llX\n", ptr);
@@ -81,8 +81,8 @@ void test_objects_allocate() {
       ptr = context.allocateBlock(1024);
       ptr = context.allocateBlock(16);
 
-      for (int i = 0; i < 30; i++) {
-         ptr = context.allocateBlock(2637);
+      for (int i = 0; i < 300; i++) {
+         ptr = context.allocateBlock(979);
          printf("allocate at 0x%.12llX\n", ptr);
          context.disposeBlock(ptr);
       }
