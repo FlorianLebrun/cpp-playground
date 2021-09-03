@@ -122,7 +122,7 @@ namespace sat {
       BlockUnitSpanClass(uint8_t id);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
-      virtual size_t getSizeMax() { return 1 << 31; }
+      virtual size_t getSizeMax() { return size_t(1) << 31; }
       virtual void print() override final;
    };
 
