@@ -11,6 +11,7 @@ namespace sat {
     extern const SegmentPaging cSegmentPagings[48];
 
     static const int cBlockBinCount = 48;
+    extern BlockClass* cBlockBinTable[48];
     static const int cBlockClassCount = 73;
     extern BlockClass* cBlockClassTable[73];
 

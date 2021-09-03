@@ -30,8 +30,6 @@ namespace sat {
       uint64_t gc_marks; // Bitmap of gc marked entries
       uint64_t gc_analyzis; // Bitmap of gc analyzed entries
       uint32_t segment_index; // Absolute segment index
-      sizeid_t size; // Memory size of entries
-      sizeid_t slabbing; // Memory size of entries
       uint8_t class_id;
    };
 #pragma pack(pop)
@@ -42,7 +40,7 @@ namespace sat {
       uint8_t length;
       PageBatchDescriptor* next;
 
-      uint8_t __reserve[16];
+      uint8_t __reserve[18];
    } *tpPageBatchDescriptor;
    static_assert(sizeof(PageBatchDescriptor) == 64, "bad size");
 #pragma pack(pop)
@@ -54,7 +52,7 @@ namespace sat {
       uint8_t page_index; // Page index in a desriptors array, 0 when page is alone
       uint8_t block_ratio_shift; // Page index in a desriptors array, 0 when page is alone
 
-      uint8_t __reserve[6];
+      uint8_t __reserve[8];
       std::atomic_uint64_t shared_freemap;
       PageDescriptor* next; // Chaining slot to link page in a page queue
 
@@ -71,11 +69,12 @@ namespace sat {
 
    struct BlockClass {
       uint8_t id = -1;
-      uint8_t binID = -1;
       BlockClass(uint8_t id);
       virtual address_t allocate(size_t target, MemoryContext* context) = 0;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) = 0;
       virtual size_t getSizeMax() = 0;
+      virtual sizeid_t getBlockSize() { throw; }
+      virtual sizeid_t getPageSize() { throw; }
       virtual void print() = 0;
    };
 
@@ -105,7 +104,8 @@ namespace sat {
 
       struct BlockBin {
          tpPageDescriptor pages = 0;
-         tpPageDescriptor full_pages = 0;
+         sizeid_t block_size;
+         sizeid_t page_size;
          SAT_PROFILE address_t pop();
       };
 

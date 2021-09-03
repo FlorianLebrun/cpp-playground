@@ -11,6 +11,11 @@ SAT_DEBUG(static MemorySpace* g_space = 0);
 
 MemoryContext::MemoryContext(MemorySpace* space, uint8_t id) : space(space), id(id) {
    SAT_DEBUG(g_space = space);
+   for (int i = 0; i < cBlockBinCount; i++) {
+      BlockClass* cls = cBlockBinTable[i];
+      this->blocks_bins[i].block_size = cls->getBlockSize();
+      this->blocks_bins[i].page_size = cls->getPageSize();
+   }
 }
 
 address_t MemoryContext::BlockBin::pop() {
@@ -35,10 +40,10 @@ address_t MemoryContext::BlockBin::pop() {
       page->uses |= uint64_t(1) << index;
 
       // Compute block address
-      uintptr_t ptr = (uintptr_t(index) * page->slabbing.packing) << page->slabbing.shift;
+      uintptr_t ptr = (uintptr_t(index) * this->block_size.packing) << this->block_size.shift;
       ptr += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
       if (page->page_index) {
-         ptr += (uintptr_t(page->page_index - 1) * page->size.packing) << page->size.shift;
+         ptr += (uintptr_t(page->page_index - 1) * this->page_size.packing) << this->page_size.shift;
       }
 
       SAT_DEBUG(BlockLocation loc(g_space, ptr));
@@ -75,8 +80,6 @@ tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
       auto page = tpPageDescriptor(&batch[index]);
       page->context_id = context->id;
       page->class_id = 0;
-      page->size = batch->slabbing;
-      page->slabbing = sizeid_t();
       page->block_ratio_shift = 32;
       page->page_index = index;
       page->segment_index = batch->segment_index;

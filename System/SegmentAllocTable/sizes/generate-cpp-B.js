@@ -68,7 +68,7 @@ class BlockPnS1Class extends BlockClass {
         console.assert(data.page_length === 64)
     }
     setup() {
-        this.binID = this.model.createBlockBinID()
+        this.binID = this.model.addBlockBin(this)
     }
     getDecl() {
         return `static sat::BlockPnS1Class ${this.getName()}(${this.id}, ${this.binID}, ${this.packing}, ${this.shift}, &${this.page.getName()});`
@@ -118,7 +118,7 @@ class BlockPnSnClass extends BlockClass {
         console.assert(data.page_length === Math.pow(2, this.block_per_page_L2))
     }
     setup() {
-        this.binID = this.model.createBlockBinID()
+        this.binID = this.model.addBlockBin(this)
     }
     equals(other) {
         if (!(other instanceof BlockPnSnClass)) return false
@@ -173,7 +173,7 @@ class BlockP1SnClass extends BlockClass {
         this.page = model.addPageClass(new PageP1SnClass(model, this.packing, this.shift + this.block_per_page_L2))
     }
     setup() {
-        this.binID = this.model.createBlockBinID()
+        this.binID = this.model.addBlockBin(this)
     }
     getDecl() {
         return `static sat::BlockP1SnClass ${this.getName()}(${this.id}, ${this.binID}, ${this.packing}, ${this.shift}, ${this.block_per_page_L2}, &${this.page.getName()});`
@@ -221,7 +221,7 @@ class MemoryModel {
     sizeClasses = []
 
     blockClasses = []
-    blockBinCount = 0
+    blockBins = []
 
     pageClasses = []
     pageBinCount = 0
@@ -244,8 +244,9 @@ class MemoryModel {
         }
         throw new Error()
     }
-    createBlockBinID() {
-        return this.blockBinCount++
+    addBlockBin(cls) {
+        this.blockBins.push(cls)
+        return this.blockBins.length - 1
     }
     addBlockClass(cls) {
         const existing = this.blockClasses.find(x => x.equals(cls))
@@ -299,20 +300,6 @@ class MemoryModel {
 function generateCpp() {
     const model = new MemoryModel()
 
-    const block_declarations = []
-    const block_class_table = []
-    for (const blk of model.blockClasses) {
-        block_declarations.push(blk.getDecl())
-        block_class_table.push(blk.getName())
-    }
-
-    const page_declarations = []
-    const page_class_table = []
-    for (const pg of model.pageClasses) {
-        page_declarations.push(pg.getDecl())
-        page_class_table.push(pg.getName())
-    }
-
     const code_table = []
     for (let shift = 0; shift < 24; shift++) {
         const line = []
@@ -321,6 +308,19 @@ function generateCpp() {
             line.push(`${block.id}`)
         }
         code_table.push(`{ ${line.join(", ")} }`)
+    }
+
+
+    function arrayText(array, item_per_line = 1, separator = "", indentation = "") {
+        const result = [indentation]
+        for (let i = 0; i < array.length; i++) {
+            if (i) {
+                if (i % item_per_line) result.push(`${separator} `)
+                else result.push(`${separator}\n${indentation}`)
+            }
+            result.push(array[i])
+        }
+        return result.join("")
     }
 
     // Generate c++ header
@@ -336,7 +336,8 @@ namespace sat {
     static const int cSegmentPagingsCount = ${model.pagings.length};
     extern const SegmentPaging cSegmentPagings[${model.pagings.length}];
 
-    static const int cBlockBinCount = ${model.blockBinCount};
+    static const int cBlockBinCount = ${model.blockBins.length};
+    extern BlockClass* cBlockBinTable[${model.blockBins.length}];
     static const int cBlockClassCount = ${model.blockClasses.length};
     extern BlockClass* cBlockClassTable[${model.blockClasses.length}];
 
@@ -354,25 +355,29 @@ namespace sat {
 using namespace sat;
 
 const sat::SegmentPaging sat::cSegmentPagings[${model.pagings.length}] = {
-    ${model.pagings.map(x => `{ ${x.offset}, ${x.scale} }`).join(",\n    ")}
+${arrayText(model.pagings.map(x => `{ ${x.offset}, ${x.scale} }`), 1, ",", "   ")}
 };
 
-${page_declarations.join("\n")}
+${arrayText(model.pageClasses.map(x => x.getDecl()))}
 
-sat::PageClass* sat::cPageClassTable[${page_class_table.length}] = {
-   ${page_class_table.reduce((txt, item, i) => txt + "&" + item + ((i + 1) % 8 ? ", " : ",\n   "), "")}
+sat::PageClass* sat::cPageClassTable[${model.pageClasses.length}] = {
+${arrayText(model.pageClasses.map(x => "&" + x.getName()), 8, ",", "   ")}
 };
 
-${block_declarations.join("\n")}
+${arrayText(model.blockClasses.map(x => x.getDecl()))}
 
-sat::BlockClass* sat::cBlockClassTable[${block_class_table.length}] = {
-   ${block_class_table.reduce((txt, item, i) => txt + "&" + item + ((i + 1) % 8 ? ", " : ",\n   "), "")}
+sat::BlockClass* sat::cBlockBinTable[${model.blockBins.length}] = {
+${arrayText(model.blockBins.map(x => "&" + x.getName()), 8, ",", "   ")}
+};
+ 
+sat::BlockClass* sat::cBlockClassTable[${model.blockClasses.length}] = {
+${arrayText(model.blockClasses.map(x => "&" + x.getName()), 8, ",", "   ")}
 };
 
 BlockClass* sat::getBlockClass(size_target_t target) {
 
     static uint8_t block_sizes_map[${code_table.length}][4] = {
-        ${code_table.join(",\n        ")}
+${arrayText(code_table, 1, ",", "        ")}
     };
     
     auto id = block_sizes_map[target.shift][target.packing >> 1];

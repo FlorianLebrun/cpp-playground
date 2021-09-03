@@ -49,8 +49,6 @@ PageDescriptor* PagePnS1Class::allocate(MemoryContext* context) {
    address_t area = context->space->acquireSegmentSpan(1, 0);
    auto batch = tpPageBatchDescriptor(context->allocateSystemMemory(this->page_per_batch + size_t(1)));
    memset(batch, 0, (this->page_per_batch + size_t(1)) * 64);
-   batch->size = sizeid_t(1, 16);
-   batch->slabbing = this->sizing;
    batch->usables = get_usables_bits(this->page_per_batch);
    batch->uses = 0;
    batch->length = this->page_per_batch;
@@ -85,7 +83,6 @@ address_t BlockPnS1Class::allocate(size_t target, MemoryContext* context) {
    }
    bin.pages = this->page_class->allocate(context);
    bin.pages->class_id = this->id;
-   bin.pages->slabbing = this->sizing;
    bin.pages->block_ratio_shift = this->block_ratio_shift;
    if (bin.pages->page_index != this->page_class->page_per_batch) bin.pages->usables = uint64_t(-1);
    else bin.pages->usables = this->page_last_usables;
@@ -96,10 +93,6 @@ void BlockPnS1Class::receivePartialPage(tpPageDescriptor page, MemoryContext* co
    auto& bin = context->blocks_bins[this->binID];
    page->next = bin.pages;
    bin.pages = page;
-}
-
-size_t BlockPnS1Class::getSizeMax() {
-   return sizing.size();
 }
 
 void BlockPnS1Class::print() {
@@ -131,8 +124,6 @@ PageDescriptor* PagePnSnClass::allocate(MemoryContext* context) {
    auto batch = tpPageBatchDescriptor(context->allocateSystemMemory(this->page_per_batch + size_t(1)));
    memset(batch, 0, (this->page_per_batch + size_t(1)) * 64);
    batch->class_id = this->id;
-   batch->size = sizeid_t(this->sizing.packing, 16);
-   batch->slabbing = this->sizing;
    batch->usables = get_usables_bits(this->page_per_batch);
    batch->uses = 0;
    batch->length = this->page_per_batch;
@@ -168,7 +159,6 @@ address_t BlockPnSnClass::allocate(size_t target, MemoryContext* context) {
    }
    bin.pages = this->page_class->allocate(context);
    bin.pages->class_id = this->id;
-   bin.pages->slabbing = this->sizing;
    bin.pages->block_ratio_shift = this->block_ratio_shift;
    bin.pages->usables = this->block_usables;
    return bin.pop();
@@ -202,8 +192,6 @@ PageDescriptor* PageP1SnClass::allocate(MemoryContext* context) {
    auto page = tpPageDescriptor(context->allocateSystemMemory(1));
    page->context_id = context->id;
    page->class_id = this->id;
-   page->size = sizeid_t(1, 16);
-   page->slabbing = sizeid_t();
    page->block_ratio_shift = 32;
    page->page_index = 0;
    page->segment_index = area.segmentIndex;
@@ -239,7 +227,6 @@ address_t BlockP1SnClass::allocate(size_t target, MemoryContext* context) {
       return block;
    }
    bin.pages = this->page_class->allocate(context);
-   bin.pages->slabbing = this->sizing;
    bin.pages->block_ratio_shift = this->block_ratio_shift;
    bin.pages->usables = this->block_usables;
    return bin.pop();

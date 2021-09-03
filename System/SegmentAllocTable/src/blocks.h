@@ -22,6 +22,7 @@ namespace sat {
       virtual PageDescriptor* allocate(MemoryContext* context) override final;
    };
    struct BlockPnS1Class : BlockClass {
+      uint8_t binID = -1;
       sizeid_t sizing;
       uint8_t block_ratio_shift;
       uint64_t page_last_usables;
@@ -30,7 +31,9 @@ namespace sat {
       BlockPnS1Class(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, PagePnS1Class* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
-      virtual size_t getSizeMax() override final;
+      virtual size_t getSizeMax() override { return this->sizing.size(); }
+      virtual sizeid_t getBlockSize() override { return this->sizing; }
+      virtual sizeid_t getPageSize() override { return this->page_class->sizing; }
       virtual void print() override final;
    };
 
@@ -49,6 +52,7 @@ namespace sat {
       virtual PageDescriptor* allocate(MemoryContext* context) override final;
    };
    struct BlockPnSnClass : BlockClass {
+      uint8_t binID = -1;
       sizeid_t sizing;
       uint8_t block_ratio_shift;
       uint64_t block_usables;
@@ -56,7 +60,9 @@ namespace sat {
       BlockPnSnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PagePnSnClass* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
-      virtual size_t getSizeMax() override { return sizing.size(); }
+      virtual size_t getSizeMax() override { return this->sizing.size(); }
+      virtual sizeid_t getBlockSize() override { return this->sizing; }
+      virtual sizeid_t getPageSize() override { return this->page_class->sizing; }
       virtual void print() override final;
    };
 
@@ -74,14 +80,17 @@ namespace sat {
       virtual PageDescriptor* allocate(MemoryContext* context) override final;
    };
    struct BlockP1SnClass : BlockClass {
+      uint8_t binID = -1;
       sizeid_t sizing;
       uint8_t block_ratio_shift;
       uint64_t block_usables;
-      PageClass* page_class;
+      PageP1SnClass* page_class;
       BlockP1SnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PageP1SnClass* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
-      virtual size_t getSizeMax() override { return sizing.size(); }
+      virtual size_t getSizeMax() override { return this->sizing.size(); }
+      virtual sizeid_t getBlockSize() override { return this->sizing; }
+      virtual sizeid_t getPageSize() override { return this->page_class->sizing; }
       virtual void print() override final;
    };
 

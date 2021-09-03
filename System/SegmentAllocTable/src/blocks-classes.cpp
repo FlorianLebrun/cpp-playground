@@ -5,54 +5,54 @@
 using namespace sat;
 
 const sat::SegmentPaging sat::cSegmentPagings[48] = {
-    { 0, 0 },
-    { 0, 4194305 },
-    { 0, 2097153 },
-    { 0, 1398102 },
-    { 0, 1048577 },
-    { 0, 838861 },
-    { 0, 699051 },
-    { 0, 599187 },
-    { 0, 524289 },
-    { 0, 419431 },
-    { 0, 349526 },
-    { 0, 299594 },
-    { 0, 262145 },
-    { 0, 209716 },
-    { 0, 174763 },
-    { 0, 149797 },
-    { 0, 131073 },
-    { 0, 104858 },
-    { 0, 87382 },
-    { 0, 74899 },
-    { 0, 65537 },
-    { 0, 52429 },
-    { 65536, 52429 },
-    { 131072, 52429 },
-    { 196608, 52429 },
-    { 262144, 52429 },
-    { 0, 43691 },
-    { 65536, 43691 },
-    { 131072, 43691 },
-    { 0, 37450 },
-    { 65536, 37450 },
-    { 131072, 37450 },
-    { 196608, 37450 },
-    { 262144, 37450 },
-    { 327680, 37450 },
-    { 393216, 37450 },
-    { 0, 13108 },
-    { 65536, 13108 },
-    { 131072, 13108 },
-    { 196608, 13108 },
-    { 262144, 13108 },
-    { 0, 9363 },
-    { 65536, 9363 },
-    { 131072, 9363 },
-    { 196608, 9363 },
-    { 262144, 9363 },
-    { 327680, 9363 },
-    { 393216, 9363 }
+   { 0, 0 },
+   { 0, 4194305 },
+   { 0, 2097153 },
+   { 0, 1398102 },
+   { 0, 1048577 },
+   { 0, 838861 },
+   { 0, 699051 },
+   { 0, 599187 },
+   { 0, 524289 },
+   { 0, 419431 },
+   { 0, 349526 },
+   { 0, 299594 },
+   { 0, 262145 },
+   { 0, 209716 },
+   { 0, 174763 },
+   { 0, 149797 },
+   { 0, 131073 },
+   { 0, 104858 },
+   { 0, 87382 },
+   { 0, 74899 },
+   { 0, 65537 },
+   { 0, 52429 },
+   { 65536, 52429 },
+   { 131072, 52429 },
+   { 196608, 52429 },
+   { 262144, 52429 },
+   { 0, 43691 },
+   { 65536, 43691 },
+   { 131072, 43691 },
+   { 0, 37450 },
+   { 65536, 37450 },
+   { 131072, 37450 },
+   { 196608, 37450 },
+   { 262144, 37450 },
+   { 327680, 37450 },
+   { 393216, 37450 },
+   { 0, 13108 },
+   { 65536, 13108 },
+   { 131072, 13108 },
+   { 196608, 13108 },
+   { 262144, 13108 },
+   { 0, 9363 },
+   { 65536, 9363 },
+   { 131072, 9363 },
+   { 196608, 9363 },
+   { 262144, 9363 },
+   { 327680, 9363 },
+   { 393216, 9363 }
 };
 
 static sat::PagePnS1Class page_0(0, 0, 1, 1, 10);
@@ -85,7 +85,7 @@ sat::PageClass* sat::cPageClassTable[25] = {
    &page_0, &page_1, &page_2, &page_3, &page_4, &page_5, &page_6, &page_7,
    &page_8, &page_9, &page_10, &page_11, &page_12, &page_13, &page_14, &page_15,
    &page_16, &page_17, &page_18, &page_19, &page_20, &page_21, &page_22, &page_23,
-   &page_24, 
+   &page_24
 };
 
 static sat::BlockPnS1Class block_0(0, 0, 1, 4, &page_0);
@@ -162,6 +162,15 @@ static sat::BlockSubunitSpanClass block_70(70, 7, 20);
 static sat::BlockSubunitSpanClass block_71(71, 5, 21);
 static sat::BlockSubunitSpanClass block_72(72, 7, 21);
 
+sat::BlockClass* sat::cBlockBinTable[48] = {
+   &block_0, &block_1, &block_2, &block_3, &block_4, &block_5, &block_6, &block_7,
+   &block_8, &block_9, &block_10, &block_11, &block_12, &block_13, &block_14, &block_15,
+   &block_16, &block_17, &block_18, &block_19, &block_20, &block_21, &block_22, &block_23,
+   &block_24, &block_25, &block_26, &block_27, &block_28, &block_29, &block_30, &block_31,
+   &block_32, &block_33, &block_34, &block_35, &block_36, &block_37, &block_38, &block_39,
+   &block_40, &block_41, &block_42, &block_44, &block_45, &block_46, &block_48, &block_50
+};
+ 
 sat::BlockClass* sat::cBlockClassTable[73] = {
    &block_0, &block_1, &block_2, &block_3, &block_4, &block_5, &block_6, &block_7,
    &block_8, &block_9, &block_10, &block_11, &block_12, &block_13, &block_14, &block_15,
@@ -172,7 +181,7 @@ sat::BlockClass* sat::cBlockClassTable[73] = {
    &block_48, &block_49, &block_50, &block_51, &block_52, &block_53, &block_54, &block_55,
    &block_56, &block_57, &block_58, &block_59, &block_60, &block_61, &block_62, &block_63,
    &block_64, &block_65, &block_66, &block_67, &block_68, &block_69, &block_70, &block_71,
-   &block_72, 
+   &block_72
 };
 
 BlockClass* sat::getBlockClass(size_target_t target) {
