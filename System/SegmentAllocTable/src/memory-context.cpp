@@ -14,7 +14,6 @@ MemoryContext::MemoryContext(MemorySpace* space, uint8_t id) : space(space), id(
    for (int i = 0; i < cBlockBinCount; i++) {
       BlockClass* cls = cBlockBinTable[i];
       this->blocks_bins[i].block_size = cls->getBlockSize();
-      this->blocks_bins[i].page_size = cls->getPageSize();
    }
 }
 
@@ -40,20 +39,10 @@ address_t MemoryContext::BlockBin::pop() {
       page->uses |= uint64_t(1) << index;
 
       // Compute block address
-      uintptr_t ptr = (uintptr_t(index) * this->block_size.packing) << this->block_size.shift;
-      ptr += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
-      if (page->page_index) {
-         ptr += (uintptr_t(page->page_index - 1) * this->page_size.packing) << this->page_size.shift;
-      }
-
       uintptr_t block_index = uintptr_t(index);
-      if (page->page_index) {
-         block_index += uintptr_t(page->page_index - 1) << (32 - page->block_ratio_shift);
-      }
-      uintptr_t ptr2 = (block_index * this->block_size.packing) << this->block_size.shift;
-      ptr2 += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
-
-      SAT_ASSERT(ptr == ptr2);
+      if (page->page_index) block_index += uintptr_t(page->page_index - 1) << (32 - page->block_ratio_shift);
+      uintptr_t ptr = (block_index * this->block_size.packing) << this->block_size.shift;
+      ptr += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
 
       SAT_DEBUG(BlockLocation loc(g_space, ptr));
       SAT_ASSERT(loc.descriptor == page);
@@ -125,13 +114,16 @@ void MemoryContext::disposeBlock(address_t address) {
    if (address.regionID != 1) throw;
    sat::BlockLocation block(this->space, address);
    auto page = block.descriptor;
+
    uint64_t bit = uint64_t(1) << block.index;
-   //printf("dispose %.8X\n", address.ptr);
    SAT_ASSERT(page->uses & bit);
+
    if (page->context_id == this->id) {
       page->uses &= ~bit;
       if (page->uses == 0) {
-         //printf("empty page %.8X\n", address.ptr);
+         auto cls = sat::cBlockClassTable[page->class_id];
+         //cls->receiveEmptyPage(page, this);
+         printf("empty page %.8X size:%d\n", address.ptr, cls->getSizeMax());
       }
    }
    else {
@@ -141,7 +133,6 @@ void MemoryContext::disposeBlock(address_t address) {
          auto cls = sat::cBlockClassTable[page->class_id];
          page->context_id = this->id;
          cls->receivePartialPage(page, this);
-         //printf("unful page\n");
       }
       else {
          printf("free %d->%d\n", this->id, page->context_id);

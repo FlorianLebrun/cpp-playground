@@ -105,7 +105,6 @@ namespace sat {
       struct BlockBin {
          tpPageDescriptor pages = 0;
          sizeid_t block_size;
-         sizeid_t page_size;
          SAT_PROFILE address_t pop();
       };
 
