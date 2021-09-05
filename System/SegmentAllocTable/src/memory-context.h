@@ -100,12 +100,28 @@ namespace sat {
       }
    };
 
+   struct MemoryStats {
+      struct Bin {
+         size_t used_count = 0;
+         size_t cached_count = 0;
+         sizeid_t base_size = 0;
+
+      };
+
+      size_t used_count = 0;
+      size_t cached_count = 0;
+      size_t used_size = 0;
+      size_t cached_size = 0;
+
+   };
+
    struct MemoryContext {
 
       struct BlockBin {
          tpPageDescriptor pages = 0;
          sizeid_t block_size;
          SAT_PROFILE address_t pop();
+         void getStats(MemoryStats::Bin& stats);
       };
 
       struct PageBin {
@@ -113,6 +129,7 @@ namespace sat {
          tpPageBatchDescriptor batches = 0;
          tpPageBatchDescriptor full_batches = 0;
          tpPageDescriptor pop(MemoryContext* context);
+         void getStats(MemoryStats::Bin& stats);
       };
 
       uint8_t id;
@@ -128,6 +145,8 @@ namespace sat {
       // note: length64 is a number of contigious 64 bytes chunks
       void* allocateSystemMemory(size_t length64);
       void releaseSystemMemory(void* base, size_t length64);
+
+      void getStats();
    };
 
    // Controller for secondary thread which have no heavy use of this allocator

@@ -26,6 +26,11 @@ struct Bitmap64 {
    void clean() {
       this->usebits = 0;
    }
+   size_t count() {
+      size_t c = 0;
+      for (uint64_t n = this->usebits; n; n &= (n - 1)) c++;
+      return c;
+   }
    void print();
    std::string str();
 };

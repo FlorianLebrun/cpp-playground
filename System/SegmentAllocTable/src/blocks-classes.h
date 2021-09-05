@@ -16,6 +16,7 @@ namespace sat {
     extern BlockClass* cBlockClassTable[73];
 
     static const int cPageBinCount = 22;
+    extern PageClass* cPageBinTable[22];
     static const int cPageClassCount = 25;
     extern PageClass* cPageClassTable[25];
 

@@ -52,7 +52,7 @@ class PagePnS1Class extends PageClass {
         this.page_size = this.packing * Math.pow(2, this.shift)
     }
     setup() {
-        this.binID = this.model.createPageBinID()
+        this.binID = this.model.addPageBin(this)
         this.pagingID = this.model.addPaging(0, NumberToFixedPoint32(1 / this.page_size))
     }
     getDecl() {
@@ -96,7 +96,7 @@ class PagePnSnClass extends PageClass {
         this.page_size = this.packing * Math.pow(2, this.shift)
     }
     setup() {
-        this.binID = this.model.createPageBinID()
+        this.binID = this.model.addPageBin(this)
         this.pagingIDs = []
         for (let i = 0; i < this.packing; i++) {
             this.pagingIDs.push(this.model.addPaging(65536 * i, NumberToFixedPoint32(1 / this.page_size)))
@@ -237,7 +237,7 @@ class MemoryModel {
     blockBins = []
 
     pageClasses = []
-    pageBinCount = 0
+    pageBins = []
 
     pagings = [{ offset: 0, scale: 0 }]
 
@@ -281,8 +281,9 @@ class MemoryModel {
         return this.addBlockClass(create(this))
     }
 
-    createPageBinID() {
-        return this.pageBinCount++
+    addPageBin(cls) {
+        this.pageBins.push(cls)
+        return this.pageBins.length - 1
     }
     addPageClass(cls) {
         const existing = this.pageClasses.find(x => x.equals(cls))
@@ -354,7 +355,8 @@ namespace sat {
     static const int cBlockClassCount = ${model.blockClasses.length};
     extern BlockClass* cBlockClassTable[${model.blockClasses.length}];
 
-    static const int cPageBinCount = ${model.pageBinCount};
+    static const int cPageBinCount = ${model.pageBins.length};
+    extern PageClass* cPageBinTable[${model.pageBins.length}];
     static const int cPageClassCount = ${model.pageClasses.length};
     extern PageClass* cPageClassTable[${model.pageClasses.length}];
 
@@ -372,6 +374,10 @@ ${arrayText(model.pagings.map(x => `{ ${x.offset}, ${x.scale} }`), 1, ",", "   "
 };
 
 ${arrayText(model.pageClasses.map(x => x.getDecl()))}
+
+sat::PageClass* sat::cPageBinTable[${model.pageBins.length}] = {
+${arrayText(model.pageBins.map(x => "&" + x.getName()), 8, ",", "   ")}
+};
 
 sat::PageClass* sat::cPageClassTable[${model.pageClasses.length}] = {
 ${arrayText(model.pageClasses.map(x => "&" + x.getName()), 8, ",", "   ")}

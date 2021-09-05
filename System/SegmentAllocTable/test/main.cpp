@@ -14,17 +14,14 @@ sat::MemoryContext* sat_malloc_handler::context = 0;
 
 int main() {
 
-
-   for (int i = 0; i < 10000000; i++) {
-      size_target_t s(i);
-   }
-
    //test_buddy_bitmap();
    //test_unit_span_alloc();
    //test_unit_fragment_alloc();
    //test_page_access();
    test_perf_alloc();
    //test_objects_allocate();
+
+   sat_malloc_handler::context->getStats();
 
    return 0;
 }

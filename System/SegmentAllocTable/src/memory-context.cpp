@@ -17,6 +17,12 @@ MemoryContext::MemoryContext(MemorySpace* space, uint8_t id) : space(space), id(
    }
 }
 
+void MemoryContext::BlockBin::getStats(MemoryStats::Bin& stats) {
+   for (auto page = this->pages; page; page = page->next) {
+      stats.cached_count += Bitmap64(page->usables ^ page->uses).count();
+   }
+}
+
 address_t MemoryContext::BlockBin::pop() {
    while (auto page = this->pages) {
 
@@ -50,6 +56,15 @@ address_t MemoryContext::BlockBin::pop() {
       return ptr;
    }
    return 0;
+}
+
+void MemoryContext::PageBin::getStats(MemoryStats::Bin& stats) {
+   for (auto page = this->pages; page; page = page->next) {
+      stats.cached_count++;
+   }
+   for (auto batch = this->batches; batch; batch = batch->next) {
+      stats.cached_count += Bitmap64(batch->usables ^ batch->uses).count();
+   }
 }
 
 tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
@@ -141,3 +156,29 @@ void MemoryContext::disposeBlock(address_t address) {
    }
 }
 
+
+void MemoryContext::getStats() {
+   int blockCacheSize = 0;
+   for (int i = 0; i < cBlockBinCount; i++) {
+      MemoryStats::Bin stats;
+      auto cls = cBlockBinTable[i];
+      auto& bin = this->blocks_bins[i];
+      bin.getStats(stats);
+      auto cache_size = stats.cached_count * bin.block_size.size();
+      printf("block '%d': count=%d\n", bin.block_size.size(), stats.cached_count);
+      blockCacheSize += cache_size;
+   }
+
+   int pageCacheSize = 0;
+   for (int i = 0; i < cPageBinCount; i++) {
+      MemoryStats::Bin stats;
+      auto cls = cPageBinTable[i];
+      auto& bin = this->pages_bins[i];
+      bin.getStats(stats);
+      printf("page '%d': count=%d\n", i, stats.cached_count);
+      //pageCacheSize += cache_size;
+   }
+
+   printf("> block cache=%d\n", blockCacheSize);
+   printf("> page cache=%d\n", pageCacheSize);
+}

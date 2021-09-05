@@ -81,6 +81,12 @@ static sat::PagePnSnClass page_22(22, 21, 7, 14, {29,30,31,32,33,34,35});
 static sat::PageP1SnClass page_23(23, 5, 16, {36,37,38,39,40});
 static sat::PageP1SnClass page_24(24, 7, 16, {41,42,43,44,45,46,47});
 
+sat::PageClass* sat::cPageBinTable[22] = {
+   &page_0, &page_1, &page_2, &page_3, &page_4, &page_5, &page_6, &page_7,
+   &page_8, &page_9, &page_10, &page_11, &page_12, &page_13, &page_14, &page_15,
+   &page_16, &page_17, &page_18, &page_20, &page_21, &page_22
+};
+
 sat::PageClass* sat::cPageClassTable[25] = {
    &page_0, &page_1, &page_2, &page_3, &page_4, &page_5, &page_6, &page_7,
    &page_8, &page_9, &page_10, &page_11, &page_12, &page_13, &page_14, &page_15,
