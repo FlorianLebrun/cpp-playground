@@ -59,19 +59,12 @@ address_t MemoryContext::BlockBin::pop() {
 }
 
 void MemoryContext::PageBin::getStats(MemoryStats::Bin& stats) {
-   for (auto page = this->pages; page; page = page->next) {
-      stats.cached_count++;
-   }
    for (auto batch = this->batches; batch; batch = batch->next) {
       stats.cached_count += Bitmap64(batch->usables ^ batch->uses).count();
    }
 }
 
 tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
-   if (auto page = this->pages) {
-      this->pages = page->next;
-      return page;
-   }
    if (auto batch = this->batches) {
 
       // Find index and tag it
@@ -85,8 +78,6 @@ tpPageDescriptor MemoryContext::PageBin::pop(MemoryContext* context) {
       // On batch is full
       if (batch->uses == batch->usables) {
          this->batches = batch->next;
-         batch->next = this->full_batches;
-         this->full_batches = batch;
       }
 
       // Format page

@@ -14,6 +14,7 @@ namespace sat {
    *
    ******************************************************/
    struct PagePnS1Class : PageClass {
+      uint8_t binID = -1;
       uint8_t pagingID;
       sizeid_t sizing;
       uint8_t page_per_batch;
@@ -45,6 +46,7 @@ namespace sat {
    *
    ******************************************************/
    struct PagePnSnClass : PageClass {
+      uint8_t binID = -1;
       sizeid_t sizing;
       uint8_t page_per_batch;
       uint8_t pagingIDs[8];

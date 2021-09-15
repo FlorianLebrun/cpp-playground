@@ -62,7 +62,6 @@ namespace sat {
 
    struct PageClass {
       uint8_t id = -1;
-      uint8_t binID = -1;
       PageClass(uint8_t id);
       virtual PageDescriptor* allocate(MemoryContext* context) = 0;
    };
@@ -125,9 +124,7 @@ namespace sat {
       };
 
       struct PageBin {
-         tpPageDescriptor pages = 0;
          tpPageBatchDescriptor batches = 0;
-         tpPageBatchDescriptor full_batches = 0;
          tpPageDescriptor pop(MemoryContext* context);
          void getStats(MemoryStats::Bin& stats);
       };
