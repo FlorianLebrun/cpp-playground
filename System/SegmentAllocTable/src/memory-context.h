@@ -64,6 +64,7 @@ namespace sat {
       uint8_t id = -1;
       PageClass(uint8_t id);
       virtual PageDescriptor* allocate(MemoryContext* context) = 0;
+      virtual sizeid_t getPageSize() = 0;
    };
 
    struct BlockClass {
@@ -73,7 +74,6 @@ namespace sat {
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) = 0;
       virtual size_t getSizeMax() = 0;
       virtual sizeid_t getBlockSize() { throw; }
-      virtual sizeid_t getPageSize() { throw; }
       virtual void print() = 0;
    };
 
@@ -118,13 +118,14 @@ namespace sat {
 
       struct BlockBin {
          tpPageDescriptor pages = 0;
-         sizeid_t block_size;
+         sizeid_t slab_size;
          SAT_PROFILE address_t pop();
          void getStats(MemoryStats::Bin& stats);
       };
 
       struct PageBin {
          tpPageBatchDescriptor batches = 0;
+         sizeid_t slab_size;
          tpPageDescriptor pop(MemoryContext* context);
          void getStats(MemoryStats::Bin& stats);
       };

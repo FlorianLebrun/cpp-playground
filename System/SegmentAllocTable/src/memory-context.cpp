@@ -13,7 +13,11 @@ MemoryContext::MemoryContext(MemorySpace* space, uint8_t id) : space(space), id(
    SAT_DEBUG(g_space = space);
    for (int i = 0; i < cBlockBinCount; i++) {
       BlockClass* cls = cBlockBinTable[i];
-      this->blocks_bins[i].block_size = cls->getBlockSize();
+      this->blocks_bins[i].slab_size = cls->getBlockSize();
+   }
+   for (int i = 0; i < cPageBinCount; i++) {
+      PageClass* cls = cPageBinTable[i];
+      this->pages_bins[i].slab_size = cls->getPageSize();
    }
 }
 
@@ -47,7 +51,7 @@ address_t MemoryContext::BlockBin::pop() {
       // Compute block address
       uintptr_t block_index = uintptr_t(index);
       if (page->page_index) block_index += uintptr_t(page->page_index - 1) << (32 - page->block_ratio_shift);
-      uintptr_t ptr = (block_index * this->block_size.packing) << this->block_size.shift;
+      uintptr_t ptr = (block_index * this->slab_size.packing) << this->slab_size.shift;
       ptr += uintptr_t(page->segment_index) << sat::cSegmentSizeL2;
 
       SAT_DEBUG(BlockLocation loc(g_space, ptr));
@@ -155,8 +159,8 @@ void MemoryContext::getStats() {
       auto cls = cBlockBinTable[i];
       auto& bin = this->blocks_bins[i];
       bin.getStats(stats);
-      auto cache_size = stats.cached_count * bin.block_size.size();
-      printf("block '%d': count=%d\n", bin.block_size.size(), stats.cached_count);
+      auto cache_size = stats.cached_count * bin.slab_size.size();
+      printf("block '%d': count=%d\n", bin.slab_size.size(), stats.cached_count);
       blockCacheSize += cache_size;
    }
 
@@ -166,8 +170,9 @@ void MemoryContext::getStats() {
       auto cls = cPageBinTable[i];
       auto& bin = this->pages_bins[i];
       bin.getStats(stats);
+      auto cache_size = stats.cached_count * bin.slab_size.size();
       printf("page '%d': count=%d\n", i, stats.cached_count);
-      //pageCacheSize += cache_size;
+      pageCacheSize += cache_size;
    }
 
    printf("> block cache=%d\n", blockCacheSize);
