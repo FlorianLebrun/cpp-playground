@@ -23,7 +23,26 @@ MemoryContext::MemoryContext(MemorySpace* space, uint8_t id) : space(space), id(
 
 void MemoryContext::BlockBin::getStats(MemoryStats::Bin& stats) {
    for (auto page = this->pages; page; page = page->next) {
-      stats.cached_count += Bitmap64(page->usables ^ page->uses).count();
+      auto uses = page->uses ^ page->shared_freemap;
+      stats.slab_cached_count += Bitmap64(page->usables ^ uses).count();
+      if (uses == page->usables) stats.pages_full_count++;
+      if (uses == 0) stats.pages_empty_count++;
+      stats.pages_count++;
+   }
+}
+
+void MemoryContext::BlockBin::scavenge(MemoryContext* context) {
+   auto pprev = &this->pages;
+   while (auto page = *pprev) {
+      page->uses ^= page->shared_freemap.exchange(0);
+      if (page->uses == 0) {
+         *pprev = page->next;
+         auto cls = cBlockClassTable[page->class_id];
+         cls->getPageClass()->release(page, context);
+      }
+      else {
+         pprev = &(*pprev)->next;
+      }
    }
 }
 
@@ -64,7 +83,11 @@ address_t MemoryContext::BlockBin::pop() {
 
 void MemoryContext::PageBin::getStats(MemoryStats::Bin& stats) {
    for (auto batch = this->batches; batch; batch = batch->next) {
-      stats.cached_count += Bitmap64(batch->usables ^ batch->uses).count();
+      auto uses = batch->uses;
+      stats.slab_cached_count += Bitmap64(batch->usables ^ uses).count();
+      if (uses == batch->usables) stats.pages_full_count++;
+      if (uses == 0) stats.pages_empty_count++;
+      stats.pages_count++;
    }
 }
 
@@ -151,6 +174,12 @@ void MemoryContext::disposeBlock(address_t address) {
    }
 }
 
+void MemoryContext::scavenge() {
+   for (int i = 0; i < cBlockBinCount; i++) {
+      auto& bin = this->blocks_bins[i];
+      bin.scavenge(this);
+   }
+}
 
 void MemoryContext::getStats() {
    int blockCacheSize = 0;
@@ -159,19 +188,20 @@ void MemoryContext::getStats() {
       auto cls = cBlockBinTable[i];
       auto& bin = this->blocks_bins[i];
       bin.getStats(stats);
-      auto cache_size = stats.cached_count * bin.slab_size.size();
-      printf("block '%d': count=%d\n", bin.slab_size.size(), stats.cached_count);
+      auto cache_size = stats.slab_cached_count * bin.slab_size.size();
+      printf("block '%d': count=%d, empty_page=%d/%d\n", bin.slab_size.size(), stats.slab_cached_count, stats.pages_empty_count, stats.pages_count);
       blockCacheSize += cache_size;
    }
 
    int pageCacheSize = 0;
+   int pageEmptySpanCount = 0;
    for (int i = 0; i < cPageBinCount; i++) {
       MemoryStats::Bin stats;
       auto cls = cPageBinTable[i];
       auto& bin = this->pages_bins[i];
       bin.getStats(stats);
-      auto cache_size = stats.cached_count * bin.slab_size.size();
-      printf("page '%d': count=%d\n", i, stats.cached_count);
+      auto cache_size = stats.slab_cached_count * bin.slab_size.size();
+      printf("page '%d': count=%d\n", i, stats.slab_cached_count);
       pageCacheSize += cache_size;
    }
 

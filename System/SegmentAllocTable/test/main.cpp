@@ -21,6 +21,7 @@ int main() {
    test_perf_alloc();
    //test_objects_allocate();
 
+   sat_malloc_handler::context->scavenge();
    sat_malloc_handler::context->getStats();
 
    return 0;

@@ -21,6 +21,7 @@ namespace sat {
       uint16_t page_last_size;
       PagePnS1Class(uint8_t id, uint8_t binID, uint8_t pagingID, uint8_t packing, uint8_t shift);
       virtual PageDescriptor* allocate(MemoryContext* context) override final;
+      virtual void release(PageDescriptor* page, MemoryContext* context) override final;
       virtual sizeid_t getPageSize() override { return this->sizing; }
    };
    struct BlockPnS1Class : BlockClass {
@@ -33,6 +34,7 @@ namespace sat {
       BlockPnS1Class(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, PagePnS1Class* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
+      virtual PageClass* getPageClass() override final { return page_class; }
       virtual size_t getSizeMax() override { return this->sizing.size(); }
       virtual sizeid_t getBlockSize() override { return this->sizing; }
       virtual void print() override final;
@@ -52,6 +54,7 @@ namespace sat {
       uint8_t pagingIDs[8];
       PagePnSnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t(&& pagingIDs)[8]);
       virtual PageDescriptor* allocate(MemoryContext* context) override final;
+      virtual void release(PageDescriptor* page, MemoryContext* context) override final;
       virtual sizeid_t getPageSize() override { return this->sizing; }
    };
    struct BlockPnSnClass : BlockClass {
@@ -63,6 +66,7 @@ namespace sat {
       BlockPnSnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PagePnSnClass* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
+      virtual PageClass* getPageClass() override final { return page_class; }
       virtual size_t getSizeMax() override { return this->sizing.size(); }
       virtual sizeid_t getBlockSize() override { return this->sizing; }
       virtual void print() override final;
@@ -80,6 +84,7 @@ namespace sat {
       uint8_t pagingIDs[8];
       PageP1SnClass(uint8_t id, uint8_t packing, uint8_t shift, uint8_t(&& pagingIDs)[8]);
       virtual PageDescriptor* allocate(MemoryContext* context) override final;
+      virtual void release(PageDescriptor* page, MemoryContext* context) override final;
       virtual sizeid_t getPageSize() override { return this->sizing; }
    };
    struct BlockP1SnClass : BlockClass {
@@ -91,6 +96,7 @@ namespace sat {
       BlockP1SnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PageP1SnClass* page_class);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
+      virtual PageClass* getPageClass() override final { return page_class; }
       virtual size_t getSizeMax() override { return this->sizing.size(); }
       virtual sizeid_t getBlockSize() override { return this->sizing; }
       virtual void print() override final;
@@ -109,6 +115,7 @@ namespace sat {
       BlockSubunitSpanClass(uint8_t id, uint8_t packing, uint16_t lengthL2);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
+      virtual PageClass* getPageClass() override final { return 0; }
       virtual size_t getSizeMax() override final;
       virtual void print() override final;
    };
@@ -124,6 +131,7 @@ namespace sat {
       BlockUnitSpanClass(uint8_t id);
       virtual address_t allocate(size_t target, MemoryContext* context) override final;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) override final;
+      virtual PageClass* getPageClass() override final { return 0; }
       virtual size_t getSizeMax() { return size_t(1) << 31; }
       virtual void print() override final;
    };

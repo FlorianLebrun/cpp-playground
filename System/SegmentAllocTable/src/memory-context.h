@@ -64,6 +64,7 @@ namespace sat {
       uint8_t id = -1;
       PageClass(uint8_t id);
       virtual PageDescriptor* allocate(MemoryContext* context) = 0;
+      virtual void release(PageDescriptor* page, MemoryContext* context) = 0;
       virtual sizeid_t getPageSize() = 0;
    };
 
@@ -72,6 +73,7 @@ namespace sat {
       BlockClass(uint8_t id);
       virtual address_t allocate(size_t target, MemoryContext* context) = 0;
       virtual void receivePartialPage(tpPageDescriptor page, MemoryContext* context) = 0;
+      virtual PageClass* getPageClass() = 0;
       virtual size_t getSizeMax() = 0;
       virtual sizeid_t getBlockSize() { throw; }
       virtual void print() = 0;
@@ -101,10 +103,12 @@ namespace sat {
 
    struct MemoryStats {
       struct Bin {
-         size_t used_count = 0;
-         size_t cached_count = 0;
-         sizeid_t base_size = 0;
-
+         sizeid_t slab_size = 0;
+         size_t slab_used_count = 0;
+         size_t slab_cached_count = 0;
+         size_t pages_empty_count = 0;
+         size_t pages_full_count = 0;
+         size_t pages_count = 0;
       };
 
       size_t used_count = 0;
@@ -120,6 +124,7 @@ namespace sat {
          tpPageDescriptor pages = 0;
          sizeid_t slab_size;
          SAT_PROFILE address_t pop();
+         void scavenge(MemoryContext* context);
          void getStats(MemoryStats::Bin& stats);
       };
 
@@ -143,6 +148,8 @@ namespace sat {
       // note: length64 is a number of contigious 64 bytes chunks
       void* allocateSystemMemory(size_t length64);
       void releaseSystemMemory(void* base, size_t length64);
+
+      void scavenge();
 
       void getStats();
    };

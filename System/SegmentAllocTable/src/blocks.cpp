@@ -65,6 +65,10 @@ PageDescriptor* PagePnS1Class::allocate(MemoryContext* context) {
    return bin.pop(context);
 }
 
+void PagePnS1Class::release(PageDescriptor* page, MemoryContext* context) {
+   printf("lost page\n");
+}
+
 BlockPnS1Class::BlockPnS1Class(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, PagePnS1Class* page_class)
    : BlockClass(id), sizing(packing, shift), page_class(page_class) {
    this->binID = binID;
@@ -144,6 +148,10 @@ PageDescriptor* PagePnSnClass::allocate(MemoryContext* context) {
    return bin.pop(context);
 }
 
+void PagePnSnClass::release(PageDescriptor* page, MemoryContext* context) {
+   printf("lost page\n");
+}
+
 BlockPnSnClass::BlockPnSnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PagePnSnClass* page_class)
    : BlockClass(id), sizing(packing, shift), page_class(page_class) {
    this->binID = binID;
@@ -210,6 +218,10 @@ PageDescriptor* PageP1SnClass::allocate(MemoryContext* context) {
    }
 
    return page;
+}
+
+void PageP1SnClass::release(PageDescriptor* page, MemoryContext* context) {
+   printf("lost page\n");
 }
 
 BlockP1SnClass::BlockP1SnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PageP1SnClass* page_class)
