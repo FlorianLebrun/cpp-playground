@@ -66,7 +66,13 @@ PageDescriptor* PagePnS1Class::allocate(MemoryContext* context) {
 }
 
 void PagePnS1Class::release(PageDescriptor* page, MemoryContext* context) {
-   printf("lost page\n");
+   auto batch = tpPageBatchDescriptor(&page[page->page_index]);
+   uint64_t page_bit = uint64_t(1) << page->page_index;
+   _ASSERT(batch->uses & page_bit);
+   batch->uses ^= page_bit;
+   if (batch->uses == 0) {
+      printf("lost batch\n");
+   }
 }
 
 BlockPnS1Class::BlockPnS1Class(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, PagePnS1Class* page_class)
@@ -149,7 +155,13 @@ PageDescriptor* PagePnSnClass::allocate(MemoryContext* context) {
 }
 
 void PagePnSnClass::release(PageDescriptor* page, MemoryContext* context) {
-   printf("lost page\n");
+   auto batch = tpPageBatchDescriptor(&page[page->page_index]);
+   uint64_t page_bit = uint64_t(1) << page->page_index;
+   _ASSERT(batch->uses & page_bit);
+   batch->uses ^= page_bit;
+   if (batch->uses == 0) {
+      printf("lost batch\n");
+   }
 }
 
 BlockPnSnClass::BlockPnSnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PagePnSnClass* page_class)
@@ -221,7 +233,8 @@ PageDescriptor* PageP1SnClass::allocate(MemoryContext* context) {
 }
 
 void PageP1SnClass::release(PageDescriptor* page, MemoryContext* context) {
-   printf("lost page\n");
+   address_t addr = uint64_t(page->segment_index) << cSegmentSizeL2;
+   context->space->releaseSegmentSpan(addr, this->sizing.packing);
 }
 
 BlockP1SnClass::BlockP1SnClass(uint8_t id, uint8_t binID, uint8_t packing, uint8_t shift, uint8_t block_per_page_L2, PageP1SnClass* page_class)

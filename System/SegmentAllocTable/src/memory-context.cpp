@@ -152,11 +152,11 @@ void MemoryContext::disposeBlock(address_t address) {
    SAT_ASSERT(page->uses & bit);
 
    if (page->context_id == this->id) {
-      page->uses &= ~bit;
+      page->uses ^= bit;
       if (page->uses == 0) {
          auto cls = sat::cBlockClassTable[page->class_id];
          //cls->receiveEmptyPage(page, this);
-         printf("empty page %.8X size:%d\n", address.ptr, cls->getSizeMax());
+         //printf("empty page %.8X size:%d\n", address.ptr, cls->getSizeMax());
       }
    }
    else {
