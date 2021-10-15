@@ -10,4 +10,4 @@ set(OPENSSL_ROOT_DIR "d:/vcpkg/installed/x64-windows")
 include(.tools/index.cmake)
 add_subdirectory(./Other/boost_1_70_0)
 
-add_subdirectory(./System/SegmentAllocTable)
+add_subdirectory(./System/BoostAsio)
