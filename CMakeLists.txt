@@ -11,3 +11,4 @@ include(.tools/index.cmake)
 add_subdirectory(./Other/boost_1_70_0)
 
 add_subdirectory(./System/BoostAsio)
+add_subdirectory(./System/TryCatchStruct)
