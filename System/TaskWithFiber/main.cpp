@@ -3,63 +3,96 @@
 #include <stdio.h>
 #include <intrin.h>
 #include <iostream>
-#include <boost/asio.hpp>
+#include <vector>
+#include <thread>
 #include <boost/context/fiber.hpp>
+#include <Windows.h>
 
 
-void print(const boost::system::error_code& /*e*/)
-{
-   std::cout << "Hello, world!" << std::endl;
-}
+struct Task;
+struct Thread;
+typedef boost::context::fiber Fiber;
 
+__declspec(thread) Thread* this_thread = 0;
+
+struct Thread {
+   std::thread thread;
+   std::vector<Task*> tasks;
+   Fiber main;
+
+   Task* task = 0;
+   Fiber* anchor = 0;
+
+   void run();
+   void yield();
+   static Fiber task_proc(Fiber&&);
+};
 
 struct Task {
    std::string name;
-   boost::context::fiber c;
+   Fiber fiber;
+   int count = 0;
    Task(std::string name)
       : name(name) {
    }
    void execute() {
       while (1) {
-         std::cout << "> do: " << this->name << std::endl;
+         std::cout << "> do: " << this->name << " " << this->count << std::endl;
          Sleep(500);
-         wait();
+         this_thread->yield();
+         this->count++;
       }
    }
-   void wait() {
-      c = std::move(c).resume();
-   }
 };
 
-struct Thread {
-   std::thread thread;
-   std::vector<Task*> tasks;
-   void run() {
-      this->thread = std::thread(
-         [&] {
-            int i = 0;
-            boost::context::fiber c;
-            for (;;) {
-               auto task = tasks[i];
+void Thread::run() {
+   this->thread = std::thread(
+      [&] {
+         int i = 0;
+         boost::context::fiber c;
+         this_thread = this;
+         this->anchor = &this->main;
+         for (;;) {
+            _ASSERT(!this->task);
+            this->task = tasks[i];
 
-               if (!task->c) {
-                  c = [=](boost::context::fiber&& c) {
-                     task->c.swap(c);
-                     task->execute();
-                     return std::move(task->c);
-                     };
-
-               }
-               c = std::move(c).resume();
-
-               std::cout << "! switch" << std::endl;
-               i = (i + 1) % tasks.size();
+            if (!this->task->fiber) {
+               std::cout << "!!! start " << this->task->name << std::endl;
+               this->task->fiber = Fiber(Thread::task_proc);
             }
+            else {
+               std::cout << "!!! resume " << this->task->name << std::endl;
+            }
+            *this->anchor = std::move(this->task->fiber).resume();
+            this->anchor = &this->main;
+
+            std::cout << "! switch" << std::endl << std::endl;
+            i = rand() % tasks.size();
          }
-      );
-      this->thread.join();
-   }
-};
+      }
+   );
+   this->thread.join();
+}
+
+Fiber Thread::task_proc(Fiber&& previous) {
+   this_thread->anchor->swap(previous);
+   this_thread->anchor = &this_thread->task->fiber;
+   _ASSERT(!previous);
+
+   this_thread->anchor = &this_thread->task->fiber;
+   this_thread->task->execute();
+
+   this_thread->task = 0;
+   return std::move(this_thread->main);
+
+}
+
+void Thread::yield() {
+   this->anchor = &this->task->fiber;
+   this->task = 0;
+
+   *this_thread->anchor = std::move(this->main).resume();
+}
 
 int main() {
 
