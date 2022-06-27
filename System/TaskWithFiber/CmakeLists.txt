@@ -1,0 +1,12 @@
+set(target TaskWithFiber)
+
+append_group_sources(files FILTER "*.c|*.cpp|*.h|*.hpp" DIRECTORIES "./")
+
+
+add_executable(${target} WIN32 ${files})
+
+target_compile_definitions(${target} PRIVATE ASIO_STANDALONE)
+
+target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
+target_link_libraries(${target} PUBLIC boost)
+
