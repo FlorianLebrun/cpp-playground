@@ -5,3 +5,5 @@ cd %~dp0
 mkdir %GENERATE_PROJECT_NAME%
 cd %GENERATE_PROJECT_NAME%
 call cmake %GENERATE_OPTIONS% "%~dp0"
+cd ..
+

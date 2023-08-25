@@ -180,8 +180,7 @@ void SimpleStackWalker::stackTrace(HANDLE hThread, std::ostream& os) {
    stackFrame.AddrStack.Offset = context.Rsp;
    stackFrame.AddrStack.Mode = AddrModeFlat;
 
-   os << "Frame               Code "
-      "address\n";
+   os << "Frame               Code address\n";
 
    // Detect loops with optimised stackframes
    DWORD64 lastFrame = 0;
@@ -228,7 +227,7 @@ void SimpleStackWalker::showVariablesAt(std::ostream& os, const STACKFRAME64& st
    SymSetContext(hProcess, &imghlp_frame, nullptr);
 
    EnumLocalCallBack callback(*this, os, stackFrame, context);
-   SymEnumSymbols(hProcess, 0, "*", EnumLocalCallBack::enumSymbolsProc, &callback);
+   SymEnumSymbolsEx(hProcess, 0, "*", EnumLocalCallBack::enumSymbolsProc, &callback, SYMENUM_OPTIONS_DEFAULT);
 }
 
 void SimpleStackWalker::showInlineVariablesAt(std::ostream& os, const STACKFRAME64& stackFrame, const CONTEXT& context, DWORD inline_context) const {
@@ -331,11 +330,11 @@ void SimpleStackWalker::decorateName(
 void EnumLocalCallBack::enumSymbols(const SYMBOL_INFO& symInfo) const {
    if (!(symInfo.Flags & SYMFLAG_LOCAL)) {
       // Ignore anything not a local variable
-      return;
+      //return;
    }
    if (symInfo.Flags & SYMFLAG_NULL) {
       // Ignore 'NULL' objects
-      return;
+      //return;
    }
    std::string name(symInfo.Name, symInfo.NameLen);
    eng.decorateName(name, symInfo.ModBase, symInfo.TypeIndex);
