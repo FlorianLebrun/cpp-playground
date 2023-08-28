@@ -1256,7 +1256,7 @@ void PrintLocation(IDiaSymbol* pSymbol)
       if ((pSymbol->get_relativeVirtualAddress(&dwRVA) == S_OK) &&
          (pSymbol->get_addressSection(&dwSect) == S_OK) &&
          (pSymbol->get_addressOffset(&dwOff) == S_OK)) {
-         wprintf(L"%s, [%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
+         wprintf(L"%s[%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
       }
       break;
 
@@ -1266,14 +1266,14 @@ void PrintLocation(IDiaSymbol* pSymbol)
       if ((pSymbol->get_relativeVirtualAddress(&dwRVA) == S_OK) &&
          (pSymbol->get_addressSection(&dwSect) == S_OK) &&
          (pSymbol->get_addressOffset(&dwOff) == S_OK)) {
-         wprintf(L"%s, [%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
+         wprintf(L"%s[%08X][%04X:%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwRVA, dwSect, dwOff);
       }
       break;
 
    case LocIsRegRel:
       if ((pSymbol->get_registerId(&dwReg) == S_OK) &&
          (pSymbol->get_offset(&lOffset) == S_OK)) {
-         wprintf(L"%s Relative, [%08X]", SzNameC7Reg((USHORT)dwReg), lOffset);
+         wprintf(L"%s.Relative[%08X]", SzNameC7Reg((USHORT)dwReg), lOffset);
       }
       break;
 
@@ -1299,7 +1299,7 @@ void PrintLocation(IDiaSymbol* pSymbol)
 
    case LocIsSlot:
       if (pSymbol->get_slot(&dwSlot) == S_OK) {
-         wprintf(L"%s, [%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwSlot);
+         wprintf(L"%s[%08X]", SafeDRef(rgLocationTypeString, dwLocType), dwSlot);
       }
       break;
 

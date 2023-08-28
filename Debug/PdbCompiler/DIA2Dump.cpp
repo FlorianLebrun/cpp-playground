@@ -20,8 +20,6 @@
 
 #pragma warning (disable : 4100)
 
-const wchar_t* g_szFilename;
-IDiaDataSource* g_pDiaDataSource;
 IDiaSession* g_pDiaSession;
 IDiaSymbol* g_pGlobalSymbol;
 DWORD g_dwMachineType = CV_CFL_80386;
@@ -33,23 +31,6 @@ void DumpOut(const char* name) {
    char path[MAX_PATH];
    sprintf(path, "%s\\%s.txt", currentDir, name);
    if (!freopen(path, "w", stdout)) throw;
-}
-
-////////////////////////////////////////////////////////////
-//
-int wmain(int argc, wchar_t* argv[])
-{
-   g_szFilename = argv[argc - 1];
-
-   if (!LoadDataFromPdb(g_szFilename, &g_pDiaDataSource, &g_pDiaSession, &g_pGlobalSymbol)) {
-      return -1;
-   }
-
-   DumpAllPdbInfo(g_pDiaSession, g_pGlobalSymbol);
-
-   Cleanup();
-
-   return 0;
 }
 
 ////////////////////////////////////////////////////////////
