@@ -1,0 +1,24 @@
+set(target PdbCompiler)
+
+set(files DIA2Dump.cpp PrintSymbol.cpp regs.cpp)
+
+source_group("" FILES ${files})
+add_executable(${target} WIN32 ${files})
+
+# Find the DIA SDK include directory and library
+find_path(DIA_SDK_INCLUDE_DIR NAMES dia2.h HINTS "${CMAKE_GENERATOR_INSTANCE}/DIA SDK/include")
+if (NOT DIA_SDK_INCLUDE_DIR)
+message(FATAL_ERROR "DIA SDK: dia2.h not found. Check for ${CMAKE_SYSTEM_PROCESSOR} at: ${CMAKE_GENERATOR_INSTANCE}/DIA SDK")
+endif()
+find_library(DIA_SDK_LIBRARY NAMES diaguids HINTS "${CMAKE_GENERATOR_INSTANCE}/DIA SDK/lib/${CMAKE_SYSTEM_PROCESSOR}")
+if (NOT DIA_SDK_LIBRARY)
+message(FATAL_ERROR "DIA SDK: diaguids.lib not found. Check for ${CMAKE_SYSTEM_PROCESSOR} at: ${CMAKE_GENERATOR_INSTANCE}/DIA SDK")
+endif()
+
+file(GLOB_RECURSE DIA_SDK_DLLS "${CMAKE_GENERATOR_INSTANCE}/DIA SDK/bin/${CMAKE_SYSTEM_PROCESSOR}/msdia*.dll")
+message(STATUS "Run in admin mode: C:\\Windows\\SysWOW64\\regsvr32.exe \"${DIA_SDK_DLLS}\"")
+
+target_include_directories(${target} PRIVATE ${DIA_SDK_INCLUDE_DIR})
+target_link_libraries(${target} PRIVATE ${DIA_SDK_LIBRARY})
+target_link_libraries(${target} PRIVATE ole32 oleaut32)
+target_link_options(${target} PRIVATE /SUBSYSTEM:CONSOLE)
